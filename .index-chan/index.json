@@ -1,35 +1,5 @@
 [
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "internalHelper",
-    "start_line": 29,
-    "end_line": 31,
-    "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
-  },
-  {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "helperFunction",
-    "start_line": 8,
-    "end_line": 10,
-    "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
-  },
-  {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "publicAPI",
-    "start_line": 33,
-    "end_line": 35,
-    "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
-  },
-  {
     "file_path": "test_project\\sample.ts",
     "function_name": "unusedExport",
     "start_line": 19,
@@ -41,9 +11,9 @@
   },
   {
     "file_path": "test_project\\test_cases.ts",
-    "function_name": "simpleUnused",
-    "start_line": 38,
-    "end_line": 40,
+    "function_name": "futureFeature",
+    "start_line": 10,
+    "end_line": 14,
     "code_snippet": "Function",
     "dependencies": [
       "helperFunction"
@@ -54,6 +24,16 @@
     "function_name": "usedMethod",
     "start_line": 25,
     "end_line": 27,
+    "code_snippet": "Function",
+    "dependencies": [
+      "helperFunction"
+    ]
+  },
+  {
+    "file_path": "test_project\\sample.ts",
+    "function_name": "usedFunction",
+    "start_line": 2,
+    "end_line": 5,
     "code_snippet": "Function",
     "dependencies": [
       "helperFunction"
@@ -71,9 +51,9 @@
   },
   {
     "file_path": "test_project\\test_cases.ts",
-    "function_name": "activeFunction",
-    "start_line": 17,
-    "end_line": 19,
+    "function_name": "internalHelper",
+    "start_line": 29,
+    "end_line": 31,
     "code_snippet": "Function",
     "dependencies": [
       "helperFunction"
@@ -90,6 +70,16 @@
     ]
   },
   {
+    "file_path": "test_project\\test_cases.ts",
+    "function_name": "simpleUnused",
+    "start_line": 38,
+    "end_line": 40,
+    "code_snippet": "Function",
+    "dependencies": [
+      "helperFunction"
+    ]
+  },
+  {
     "file_path": "test_project\\sample.ts",
     "function_name": "deadFunction",
     "start_line": 14,
@@ -100,10 +90,10 @@
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "futureFeature",
-    "start_line": 10,
-    "end_line": 14,
+    "file_path": "test_project\\sample.ts",
+    "function_name": "helperFunction",
+    "start_line": 8,
+    "end_line": 10,
     "code_snippet": "Function",
     "dependencies": [
       "helperFunction"
@@ -120,10 +110,20 @@
     ]
   },
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "usedFunction",
-    "start_line": 2,
-    "end_line": 5,
+    "file_path": "test_project\\test_cases.ts",
+    "function_name": "publicAPI",
+    "start_line": 33,
+    "end_line": 35,
+    "code_snippet": "Function",
+    "dependencies": [
+      "helperFunction"
+    ]
+  },
+  {
+    "file_path": "test_project\\test_cases.ts",
+    "function_name": "activeFunction",
+    "start_line": 17,
+    "end_line": 19,
     "code_snippet": "Function",
     "dependencies": [
       "helperFunction"

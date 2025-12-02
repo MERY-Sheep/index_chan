@@ -97,6 +97,50 @@ index-chan annotate <directory> --dry-run
 index-chan annotate <directory> --llm
 ```
 
+### Export Dependency Graph (Phase 3.1 ✅)
+
+```bash
+# GraphML format (for Gephi, yEd, Cytoscape)
+index-chan export <directory> -o graph.graphml -f graphml
+
+# DOT format (for Graphviz)
+index-chan export <directory> -o graph.dot -f dot
+
+# JSON format (for custom visualization)
+index-chan export <directory> -o graph.json -f json
+```
+
+**Visualize with Graphviz:**
+```bash
+# SVG output
+dot -Tsvg graph.dot -o graph.svg
+
+# PNG output (3D layout)
+neato -Tpng graph.dot -o graph.png
+```
+
+### 3D Web Visualization (Phase 3.2 ✅)
+
+```bash
+# Build with web feature
+cargo build --features web --release
+
+# Start web server
+cargo run --features web --release -- visualize <directory> --port 8080
+
+# Auto-open browser
+cargo run --features web --release -- visualize <directory> --port 8080 --open
+```
+
+**Features:**
+- Interactive 3D graph with Three.js + force-graph-3d
+- Real-time statistics (nodes, edges, unused count)
+- Node details on click
+- Camera controls (rotate, zoom, pan)
+- Dark theme UI
+
+**Open in browser:** http://localhost:8080
+
 ### Code Search (Phase 2 🚧)
 
 ```bash

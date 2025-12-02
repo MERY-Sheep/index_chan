@@ -11,12 +11,16 @@ mod annotator;
 mod cleaner;
 mod conversation;
 mod detector;
+mod exporter;
 mod graph;
 mod llm;
 mod parser;
 mod reporter;
 mod scanner;
 mod search;
+
+#[cfg(feature = "web")]
+mod web_server;
 
 #[derive(Parser)]
 #[command(name = "index-chan")]
@@ -149,6 +153,60 @@ enum Commands {
         /// Chat history JSON file
         #[arg(value_name = "FILE")]
         file: PathBuf,
+
+        /// Use LLM for advanced topic detection
+        #[arg(long)]
+        llm: bool,
+    },
+
+    /// Find related messages in chat history
+    Related {
+        /// Chat history JSON file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+
+        /// Query to find related messages
+        #[arg(value_name = "QUERY")]
+        query: String,
+
+        /// Number of results to return
+        #[arg(short = 'k', long, default_value = "5")]
+        top_k: usize,
+
+        /// Show context window around each result
+        #[arg(long)]
+        context: bool,
+    },
+
+    /// Export dependency graph for visualization
+    Export {
+        /// Target directory to analyze
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Output file path
+        #[arg(short, long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Export format (graphml, dot, json)
+        #[arg(short, long, default_value = "graphml")]
+        format: String,
+    },
+
+    /// Visualize dependency graph in 3D (web server)
+    #[cfg(feature = "web")]
+    Visualize {
+        /// Target directory to analyze
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Server port
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+
+        /// Open browser automatically
+        #[arg(long)]
+        open: bool,
     },
 }
 
@@ -587,7 +645,7 @@ fn main() -> Result<()> {
             println!();
 
             // Detect topics
-            let topic_detector = conversation::TopicDetector::new();
+            let mut topic_detector = conversation::TopicDetector::new();
             topic_detector.detect_topics(&mut graph)?;
 
             println!("📚 Topics detected: {}", graph.topics.len());
@@ -597,7 +655,7 @@ fn main() -> Result<()> {
             println!();
 
             // Calculate token reduction
-            let reduction = analyzer.calculate_token_reduction(&graph);
+            let reduction = analyzer.calculate_token_reduction(&graph, None);
             println!("🎯 Token reduction:");
             println!("  Total tokens: {}", reduction.total_tokens);
             println!("  Relevant tokens: {}", reduction.relevant_tokens);
@@ -612,12 +670,15 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Commands::Topics { file } => {
-            println!("📚 Extracting topics: {}", file.display());
+        Commands::Topics { file, llm } => {
+            println!("📚 トピック抽出: {}", file.display());
+            if llm {
+                println!("🤖 LLM分析モード有効");
+            }
             println!();
 
             if !file.exists() {
-                eprintln!("❌ File not found: {}", file.display());
+                eprintln!("❌ ファイルが見つかりません: {}", file.display());
                 return Ok(());
             }
 
@@ -626,20 +687,27 @@ fn main() -> Result<()> {
             let mut graph = analyzer.analyze_file(&file)?;
 
             // Detect topics
-            let topic_detector = conversation::TopicDetector::new();
+            let mut topic_detector = if llm {
+                println!("🤖 LLMでトピックを分析中...");
+                let llm_config = llm::LLMConfig::default();
+                conversation::TopicDetector::with_llm(llm_config)?
+            } else {
+                conversation::TopicDetector::new()
+            };
+            
             topic_detector.detect_topics(&mut graph)?;
 
             if graph.topics.is_empty() {
-                println!("No topics found");
+                println!("トピックが見つかりませんでした");
                 return Ok(());
             }
 
-            println!("📊 Found {} topics:\n", graph.topics.len());
+            println!("📊 {}個のトピックを検出:\n", graph.topics.len());
 
             for (i, topic) in graph.topics.iter().enumerate() {
                 println!("{}. {}", i + 1, topic.name);
-                println!("   Messages: {}", topic.message_ids.len());
-                println!("   Keywords: {}", topic.keywords.join(", "));
+                println!("   メッセージ数: {}", topic.message_ids.len());
+                println!("   キーワード: {}", topic.keywords.join(", "));
                 println!();
             }
 
@@ -704,6 +772,172 @@ fn main() -> Result<()> {
                 let norm: f32 = vector.iter().map(|x| x * x).sum::<f32>().sqrt();
                 println!("  L2ノルム: {:.6}", norm);
                 println!("\n💡 L2ノルムが1.0に近い場合、正規化されています");
+            }
+
+            Ok(())
+        }
+        Commands::Related { file, query, top_k, context } => {
+            println!("🔍 関連メッセージ検索: {}", file.display());
+            println!("📝 クエリ: {}\n", query);
+
+            if !file.exists() {
+                eprintln!("❌ ファイルが見つかりません: {}", file.display());
+                return Ok(());
+            }
+
+            // Analyze chat
+            let analyzer = conversation::ConversationAnalyzer::new()?;
+            let graph = analyzer.analyze_file(&file)?;
+
+            println!("📊 会話統計:");
+            let stats = graph.stats();
+            println!("  メッセージ数: {}", stats.total_messages);
+            println!();
+
+            // Find related messages
+            println!("🔍 関連メッセージを検索中...");
+            let related = analyzer.find_related_messages(&graph, &query, top_k)?;
+
+            if related.is_empty() {
+                println!("関連メッセージが見つかりませんでした");
+                return Ok(());
+            }
+
+            println!("📊 {}件の関連メッセージを発見:\n", related.len());
+
+            for (i, msg) in related.iter().enumerate() {
+                println!("{}. [{}] {} (類似度: {:.3})", 
+                    i + 1, 
+                    msg.role, 
+                    msg.timestamp,
+                    msg.similarity
+                );
+                
+                if let Some(topic_id) = &msg.topic_id {
+                    if let Some(topic) = graph.topics.iter().find(|t| &t.id == topic_id) {
+                        println!("   🏷️  トピック: {}", topic.name);
+                    }
+                }
+                
+                println!("   💬 {}", msg.content);
+                
+                if context {
+                    let context_msgs = graph.get_context_window(&msg.id, 1);
+                    if context_msgs.len() > 1 {
+                        println!("   📖 コンテキスト:");
+                        for ctx_msg in context_msgs {
+                            if ctx_msg.id != msg.id {
+                                println!("      [{}] {}", ctx_msg.role, 
+                                    ctx_msg.content.chars().take(60).collect::<String>());
+                            }
+                        }
+                    }
+                }
+                
+                println!();
+            }
+
+            // Calculate token reduction
+            let reduction = analyzer.calculate_token_reduction(&graph, Some(&query));
+            println!("🎯 トークン削減効果:");
+            println!("  全体トークン数: {}", reduction.total_tokens);
+            println!("  関連トークン数: {}", reduction.relevant_tokens);
+            println!("  削減率: {:.1}%", reduction.reduction_rate * 100.0);
+
+            Ok(())
+        }
+        Commands::Export { directory, output, format } => {
+            println!("📊 グラフをエクスポート中: {}", directory.display());
+            println!("📁 出力先: {}", output.display());
+            println!("📋 形式: {}\n", format);
+
+            if !directory.exists() {
+                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
+                return Ok(());
+            }
+
+            // Scan directory
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&directory)?;
+
+            println!("📊 グラフ統計:");
+            println!("  ノード数: {}", graph.nodes.len());
+            println!("  エッジ数: {}", graph.edges.len());
+            println!();
+
+            // Export based on format
+            match format.to_lowercase().as_str() {
+                "graphml" => {
+                    exporter::GraphExporter::export_graphml(&graph, &output)?;
+                    println!("✅ GraphML形式でエクスポート完了");
+                    println!("💡 Gephi、yEd、Cytoscapeで開けます");
+                }
+                "dot" => {
+                    exporter::GraphExporter::export_dot(&graph, &output)?;
+                    println!("✅ DOT形式でエクスポート完了");
+                    println!("💡 Graphvizで可視化:");
+                    println!("   dot -Tsvg {} -o graph.svg", output.display());
+                    println!("   neato -Tpng {} -o graph.png", output.display());
+                }
+                "json" => {
+                    exporter::GraphExporter::export_json(&graph, &output)?;
+                    println!("✅ JSON形式でエクスポート完了");
+                    println!("💡 カスタム可視化ツールで使用できます");
+                }
+                _ => {
+                    eprintln!("❌ 未対応の形式: {}", format);
+                    eprintln!("💡 対応形式: graphml, dot, json");
+                    return Ok(());
+                }
+            }
+
+            println!("\n📄 ファイルサイズ: {} bytes", std::fs::metadata(&output)?.len());
+
+            Ok(())
+        }
+        #[cfg(feature = "web")]
+        Commands::Visualize {
+            directory,
+            port,
+            open,
+        } => {
+            println!("📊 依存関係グラフを可視化中: {}", directory.display());
+            println!();
+
+            if !directory.exists() {
+                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
+                return Ok(());
+            }
+
+            // Scan directory
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&directory)?;
+
+            println!("📊 グラフ統計:");
+            println!("  ノード数: {}", graph.nodes.len());
+            println!("  エッジ数: {}", graph.edges.len());
+            println!();
+
+            // Open browser if requested
+            if open {
+                let url = format!("http://localhost:{}", port);
+                println!("🌐 ブラウザを開いています: {}", url);
+                #[cfg(feature = "web")]
+                {
+                    use std::process::Command;
+                    let _ = Command::new("cmd")
+                        .args(&["/C", "start", &url])
+                        .spawn();
+                }
+            }
+
+            // Start web server (requires tokio runtime)
+            #[cfg(feature = "web")]
+            {
+                let runtime = tokio::runtime::Runtime::new()?;
+                runtime.block_on(async {
+                    web_server::server::start_server(graph, port).await
+                })?;
             }
 
             Ok(())

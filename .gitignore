@@ -19,6 +19,14 @@ src_analysis.json
 test_project_report.json
 *_report.json
 
+# Generated graph files
+*.graphml
+*.dot
+graph.json
+graph.svg
+graph.png
+graph.pdf
+
 # Development documentation (internal, Japanese)
 Doc/
 

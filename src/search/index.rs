@@ -29,6 +29,7 @@ pub struct CodeIndex {
     vectors: Vec<Vec<f32>>,
     metadata: Vec<CodeMetadata>,
     embedding_model: EmbeddingModel,
+    #[allow(dead_code)]
     cache: HashMap<String, Vec<f32>>,
 }
 
@@ -107,6 +108,7 @@ impl CodeIndex {
     }
 
     /// Check if index is empty
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.metadata.is_empty()
     }

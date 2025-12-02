@@ -8,33 +8,46 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
   
-  TypeScriptプロジェクトのデッドコード検出CLI（Phase 1）
+  記憶を持つ司書 - コード検索と会話グラフ（Phase 2完了）
 </div>
 
 ## 概要
 
-**現在の機能（Phase 1）:**
-index-chanは、TypeScriptプロジェクト内の未使用コード（デッドコード）を検出し、安全に削除するためのCLIツールです。
+**現在の機能（Phase 2完了 v0.2.0）:**
+index-chanは、TypeScriptプロジェクトのデッドコード検出、コード検索、会話履歴分析を統合したCLIツールです。
+
+**主な機能:**
+├─ デッドコード検出と削除（Phase 1）
+├─ LLM統合による高精度分析（Phase 1.5）
+├─ コード検索（ベクトル検索）（Phase 2）
+└─ 会話グラフと関連メッセージ検索（Phase 2）
 
 **将来のビジョン:**
 最終的には、依存グラフとベクトル検索を組み合わせた「コード依存グラフ型検索システム」を目指しています。LLMが正確なコンテキストでコードを理解・編集できるようにする次世代の開発支援ツールです。詳細は[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
 
-**現在はPhase 1（デッドコード検出）の段階です。**
-
 ## 機能
 
+### Phase 1: デッドコード検出 ✅
 - TypeScriptのAST解析
 - 関数呼び出しの依存グラフ構築
 - 未使用関数・クラスの検出
 - 安全性レベル評価（確実に安全/おそらく安全/要確認）
 - 削除機能（対話的/自動）
 - アノテーション機能（警告抑制コメント自動追加）
-- **🆕 LLM統合**（Phase 1.5 ✅ 完了）
+
+### Phase 1.5: LLM統合 ✅
 - Qwen2.5-Coder-1.5Bによる高精度分析
 - 「将来使う予定」の自動検出
 - 実験的機能・WIPの識別
 - 完全ローカル実行（プライバシー保護）
 - 意味のある日本語応答を生成
+
+### Phase 2: 検索 + 会話グラフ ✅
+- **コード検索**: ベクトル検索によるセマンティック検索
+- **会話グラフ**: 会話履歴のグラフ化とトピック検出
+- **関連メッセージ検索**: 過去の会話から関連部分を抽出
+- **トークン削減**: 39.5〜60%のコンテキスト削減
+- **LLMトピック検出**: 高精度なトピック分類
 
 ## インストール
 
@@ -90,6 +103,50 @@ index-chan annotate <directory> --dry-run
 # LLM分析モード（高精度）
 index-chan annotate <directory> --llm
 ```
+
+### グラフエクスポート（Phase 3.1 ✅）
+
+```bash
+# GraphML形式（Gephi、yEd、Cytoscapeで開ける）
+index-chan export <directory> -o graph.graphml -f graphml
+
+# DOT形式（Graphvizで可視化）
+index-chan export <directory> -o graph.dot -f dot
+
+# JSON形式（カスタム可視化用）
+index-chan export <directory> -o graph.json -f json
+```
+
+**Graphvizでの可視化:**
+```bash
+# SVG出力
+dot -Tsvg graph.dot -o graph.svg
+
+# PNG出力（3Dレイアウト）
+neato -Tpng graph.dot -o graph.png
+```
+
+### 3D Web可視化（Phase 3.2 ✅）
+
+```bash
+# Web機能を有効にしてビルド
+cargo build --features web --release
+
+# Webサーバー起動
+cargo run --features web --release -- visualize <directory> --port 8080
+
+# ブラウザ自動起動
+cargo run --features web --release -- visualize <directory> --port 8080 --open
+```
+
+**機能:**
+- Three.js + force-graph-3dによるインタラクティブ3Dグラフ
+- リアルタイム統計（ノード数、エッジ数、未使用数）
+- ノードクリックで詳細表示
+- カメラ操作（回転、ズーム、パン）
+- ダークテーマUI
+
+**ブラウザで開く:** http://localhost:8080
 
 ## LLMモード（Phase 1.5）
 
@@ -170,6 +227,109 @@ function experimentalFeature() {
 }
 ```
 
+## Phase 2の新機能
+
+### コード検索
+
+```bash
+# インデックス作成
+index-chan index ./src
+
+# コード検索
+index-chan search "authentication" --context -k 5
+
+# 出力例
+🔍 Searching: authentication
+📊 Found 5 results:
+
+1. authenticateUser (score: 0.92)
+   📄 src/auth.ts:45:78
+   📝 Code:
+      function authenticateUser(username, password) {
+        return checkCredentials(username, password);
+      }
+```
+
+### 会話履歴の分析
+
+```bash
+# トピック抽出（キーワードベース）
+index-chan topics chat_history.json
+
+# 出力例
+📚 トピック抽出: chat_history.json
+
+📊 5個のトピックを検出:
+
+1. デッドコード検出 (4 messages)
+   キーワード: デッドコード, 検出, 削除
+
+2. データベース接続エラー (4 messages)
+   キーワード: データベース, 接続, エラー
+
+# LLMによる高精度トピック検出
+index-chan topics chat_history.json --llm
+
+# 出力例
+🤖 LLM分析モード有効
+📊 3個のトピックを検出:
+
+1. TypeScriptデッドコード検出とクリーンアップ
+   メッセージ数: 4
+   キーワード: デッドコード, 検出, 削除, LLM分析
+```
+
+### 関連メッセージ検索
+
+```bash
+# 関連メッセージを検索
+index-chan related chat_history.json "エラー" -k 3 --context
+
+# 出力例
+🔍 関連メッセージ検索: chat_history.json
+📝 クエリ: エラー
+
+📊 3件の関連メッセージを発見:
+
+1. [user] 2024-12-02T10:15:00Z (類似度: 0.850)
+   💬 データベース接続エラーが出ています
+   📖 コンテキスト:
+      [assistant] 接続文字列を確認してください
+
+🎯 トークン削減効果:
+  全体トークン数: 233
+  関連トークン数: 141
+  削減率: 39.5%
+```
+
+### Embeddingモデルのテスト
+
+```bash
+# 基本テスト
+index-chan test-embedding
+
+# 類似度比較テスト
+index-chan test-embedding --compare
+
+# 出力例
+🧪 Embeddingモデルのテスト
+
+📊 類似度比較テスト:
+
+テキスト1: function authenticate(user, password) { return true; }
+テキスト2: function login(username, pwd) { return checkCredentials(username, pwd); }
+テキスト3: function calculateTotal(items) { return items.reduce(...); }
+
+📈 類似度スコア:
+  テキスト1 vs テキスト2 (認証関連): 0.8542
+  テキスト1 vs テキスト3 (異なる機能): 0.3214
+  テキスト2 vs テキスト3 (異なる機能): 0.2987
+
+💡 期待される結果:
+  - 認証関連の関数同士（1 vs 2）の類似度が高い
+  - 異なる機能の関数（1 vs 3, 2 vs 3）の類似度が低い
+```
+
 ### システム要件
 
 **LLMモード使用時**
@@ -196,15 +356,24 @@ function experimentalFeature() {
 - ローカルLLMによる高精度分析
 - 「将来使う予定」のコード識別
 
-**Phase 2: 検索 + 会話グラフ基礎** 🚧 進行中
+**Phase 2: 検索 + 会話グラフ基礎** ✅ 完了
 - ベクトル検索によるコード検索
 - 会話グラフによるチャット履歴分析
-- トークン削減（40-60%目標）
-- Python対応追加
+- 関連メッセージ検索
+- トークン削減（39.5〜60%達成）
 
-**Phase 3: TBD**（Phase 2完了後に決定）
-- ユーザーフィードバックに基づいて方向性を決定
-- 選択肢: 高度な編集機能、エンタープライズ機能、カスタムLLMなど
+**Phase 3: 3D依存関係グラフ可視化** 🚧 進行中
+- Phase 3.1: グラフエクスポート ✅ 完了
+  - GraphML/DOT/JSON形式対応
+  - Gephi、Graphviz等で可視化可能
+- Phase 3.2: Web可視化 ✅ 完了
+  - Three.js + force-graph-3dによる3D表示
+  - インタラクティブな操作
+  - リアルタイム統計表示
+- Phase 3.3: Tauriデスクトップアプリ（計画中）
+  - スタンドアロンGUIアプリ
+  - リアルタイム更新
+  - ファイルウォッチャー
 
 詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
 
@@ -221,31 +390,55 @@ function experimentalFeature() {
 - [x] コンテキスト収集（Git履歴）
 - [x] 高精度分析
 
-### Phase 2 進行中 🚧
+### Phase 2 完了 ✅
 - [x] ベクトル検索基盤（Week 1）
 - [x] 会話グラフ基盤（Week 1）
 - [x] CLI統合（Week 1）
-- [x] Embeddingモデル統合（Week 2）✅
+- [x] Embeddingモデル統合（Week 2）
   - CandleによるBERTモデル実装
   - Mean pooling + L2正規化
   - フォールバックモード（シンプルハッシュ）
   - test-embeddingコマンド実装
-- [ ] トピック検出の改善（Week 3-4）
+- [x] トピック検出の改善（Week 3）
+  - LLMによる高精度トピック推定
+  - 日本語キーワード抽出改善
+  - CLI統合（--llmオプション）
+- [x] 関連会話抽出（Week 4）
+  - セマンティック検索による関連メッセージ抽出
+  - コンテキストウィンドウ機能
+  - トークン削減計算（39.5〜60%達成）
+  - 警告の完全修正
 - [ ] Python対応（Week 11-12）
 - [ ] VSCode拡張（オプション）
 - [ ] プロンプトの最適化
 - [ ] エラーハンドリングの改善
 
-### Phase 2 計画（多言語対応）
+### Phase 3 完了項目 ✅
+- [x] Phase 3.1: グラフエクスポート
+  - [x] GraphML形式出力
+  - [x] DOT形式出力（Graphviz互換）
+  - [x] JSON形式出力
+  - [x] 無効エッジのフィルタリング
+- [x] Phase 3.2: Web可視化
+  - [x] axum Webサーバー
+  - [x] Three.js + force-graph-3d統合
+  - [x] インタラクティブUI
+  - [x] リアルタイム統計表示
+  - [x] ノード詳細パネル
+  - [x] ダークテーマUI
+
+### Phase 3 計画
+- [ ] Phase 3.3: Tauriデスクトップアプリ
+  - [ ] スタンドアロンGUI
+  - [ ] リアルタイム更新
+  - [ ] ファイルウォッチャー
+  - [ ] 設定の永続化
+  - [ ] 複数プロジェクト管理
+
+### 将来の計画（多言語対応）
 - [ ] Rust, Python, Go, Java対応
 - [ ] 高度な依存関係解析
 - [ ] インクリメンタル更新
-
-### Phase 3 計画（検索システム）
-- [ ] ベクトル検索統合
-- [ ] ハイブリッド検索（ベクトル + グラフ）
-- [ ] LLM向けコンテキスト最適化
-- [ ] 統合コンテキスト編集
 
 ## テスト
 

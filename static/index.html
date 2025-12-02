@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>index-chan - 3D依存関係グラフ</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+        }
+        
+        #graph-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #16213e;
+            max-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #info-panel h2 {
+            margin: 0 0 15px 0;
+            font-size: 20px;
+            color: #4ecca3;
+        }
+        
+        #info-panel p {
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        #info-panel .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #16213e;
+        }
+        
+        #info-panel .stat:last-child {
+            border-bottom: none;
+        }
+        
+        #info-panel .label {
+            color: #93b5c6;
+        }
+        
+        #info-panel .value {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+        
+        #node-details {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #16213e;
+            max-width: 350px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+        
+        #node-details h3 {
+            margin: 0 0 15px 0;
+            color: #4ecca3;
+            font-size: 18px;
+        }
+        
+        #node-details .detail-row {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #16213e;
+        }
+        
+        #node-details .detail-label {
+            color: #93b5c6;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        #node-details .detail-value {
+            color: #eee;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .loading h1 {
+            color: #4ecca3;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #16213e;
+            border-top: 4px solid #4ecca3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #16213e;
+        }
+        
+        .controls button {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #3daa82;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <h1>🔍 index-chan</h1>
+        <div class="spinner"></div>
+        <p>グラフを読み込み中...</p>
+    </div>
+    
+    <div id="graph-container"></div>
+    
+    <div id="info-panel">
+        <h2>📊 グラフ統計</h2>
+        <div class="stat">
+            <span class="label">ノード数:</span>
+            <span class="value" id="node-count">-</span>
+        </div>
+        <div class="stat">
+            <span class="label">エッジ数:</span>
+            <span class="value" id="edge-count">-</span>
+        </div>
+        <div class="stat">
+            <span class="label">未使用:</span>
+            <span class="value" id="unused-count">-</span>
+        </div>
+        <p style="margin-top: 15px; font-size: 12px; color: #93b5c6;">
+            💡 ノードをクリックで詳細表示<br>
+            🖱️ ドラッグで回転<br>
+            🔍 スクロールでズーム
+        </p>
+    </div>
+    
+    <div id="node-details">
+        <h3 id="node-name">-</h3>
+        <div class="detail-row">
+            <div class="detail-label">タイプ</div>
+            <div class="detail-value" id="node-type">-</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">ファイル</div>
+            <div class="detail-value" id="node-file">-</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">行範囲</div>
+            <div class="detail-value" id="node-lines">-</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">エクスポート</div>
+            <div class="detail-value" id="node-exported">-</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">使用状況</div>
+            <div class="detail-value" id="node-used">-</div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="resetCamera()">🎯 リセット</button>
+        <button onclick="togglePause()">⏸️ 一時停止</button>
+    </div>
+
+    <script src="https://unpkg.com/three@0.159.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+    
+    <script>
+        let graph;
+        let isPaused = false;
+        
+        async function loadGraph() {
+            try {
+                const response = await fetch('/api/graph');
+                const data = await response.json();
+                
+                // Convert to force-graph format
+                const nodes = Object.entries(data.nodes).map(([id, node]) => ({
+                    id: parseInt(id),
+                    name: node.name,
+                    type: node.node_type,
+                    file: node.file_path,
+                    lines: node.line_range,
+                    exported: node.is_exported,
+                    used: node.is_used,
+                    color: node.is_used ? '#4ecca3' : '#e74c3c'
+                }));
+                
+                const links = data.edges
+                    .filter(edge => 
+                        data.nodes[edge.from] && data.nodes[edge.to]
+                    )
+                    .map(edge => ({
+                        source: edge.from,
+                        target: edge.to,
+                        type: edge.edge_type
+                    }));
+                
+                // Update stats
+                document.getElementById('node-count').textContent = nodes.length;
+                document.getElementById('edge-count').textContent = links.length;
+                document.getElementById('unused-count').textContent = 
+                    nodes.filter(n => !n.used).length;
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                
+                // Create graph
+                graph = ForceGraph3D()
+                    (document.getElementById('graph-container'))
+                    .graphData({ nodes, links })
+                    .nodeLabel('name')
+                    .nodeColor('color')
+                    .nodeRelSize(6)
+                    .linkColor(() => '#93b5c6')
+                    .linkOpacity(0.5)
+                    .linkWidth(2)
+                    .onNodeClick(node => {
+                        showNodeDetails(node);
+                    })
+                    .backgroundColor('#1a1a2e');
+                
+            } catch (error) {
+                console.error('グラフの読み込みに失敗:', error);
+                document.getElementById('loading').innerHTML = 
+                    '<h1>❌ エラー</h1><p>グラフの読み込みに失敗しました</p>';
+            }
+        }
+        
+        function showNodeDetails(node) {
+            const panel = document.getElementById('node-details');
+            panel.style.display = 'block';
+            
+            document.getElementById('node-name').textContent = node.name;
+            document.getElementById('node-type').textContent = node.type;
+            document.getElementById('node-file').textContent = node.file;
+            document.getElementById('node-lines').textContent = 
+                `${node.lines[0]} - ${node.lines[1]}`;
+            document.getElementById('node-exported').textContent = 
+                node.exported ? '✅ はい' : '❌ いいえ';
+            document.getElementById('node-used').textContent = 
+                node.used ? '✅ 使用中' : '⚠️ 未使用';
+        }
+        
+        function resetCamera() {
+            if (graph) {
+                graph.cameraPosition({ x: 0, y: 0, z: 1000 }, { x: 0, y: 0, z: 0 }, 1000);
+            }
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            if (graph) {
+                if (isPaused) {
+                    graph.pauseAnimation();
+                    event.target.textContent = '▶️ 再開';
+                } else {
+                    graph.resumeAnimation();
+                    event.target.textContent = '⏸️ 一時停止';
+                }
+            }
+        }
+        
+        // Load graph on page load
+        loadGraph();
+    </script>
+</body>
+</html>

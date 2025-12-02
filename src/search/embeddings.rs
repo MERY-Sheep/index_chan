@@ -58,7 +58,8 @@ impl EmbeddingModel {
             }
             Err(e) => {
                 if allow_fallback {
-                    eprintln!("⚠️  Embeddingモデルのロードに失敗、シンプルハッシュにフォールバック: {}", e);
+                    eprintln!("⚠️  Embeddingモデルのロードに失敗、シンプルハッシュにフォールバック");
+                    eprintln!("📋 エラー詳細: {:#}", e);
                     
                     // Create a dummy tokenizer for fallback mode
                     let tokenizer = Self::create_dummy_tokenizer()?;
@@ -98,17 +99,31 @@ impl EmbeddingModel {
             println!("  HuggingFace Hubからダウンロード中...");
             println!("  💡 初回実行時は数分かかる場合があります");
             
+            // Debug: Check environment variables
+            if let Ok(endpoint) = std::env::var("HF_ENDPOINT") {
+                eprintln!("🔍 デバッグ: HF_ENDPOINT = {}", endpoint);
+            }
+            if let Ok(endpoint) = std::env::var("HUGGINGFACE_HUB_ENDPOINT") {
+                eprintln!("🔍 デバッグ: HUGGINGFACE_HUB_ENDPOINT = {}", endpoint);
+            }
+            
             // Use the same approach as LLM model
             let api = Api::new().context(
                 "HuggingFace APIの初期化に失敗しました\n\
                  💡 トラブルシューティング:\n\
                     1. インターネット接続を確認してください\n\
                     2. ファイアウォール内の場合はプロキシ設定を確認してください\n\
-                    3. HuggingFace Hubがダウンしている場合は後で再試行してください"
+                    3. HuggingFace Hubがダウンしている場合は後で再試行してください\n\
+                    4. 環境変数 HF_ENDPOINT / HUGGINGFACE_HUB_ENDPOINT を確認してください"
             )?;
+            
+            eprintln!("🔍 デバッグ: API初期化成功");
+            eprintln!("🔍 デバッグ: モデル名 = {}", config.model_name);
             
             // Create model repo reference
             let model_repo = api.model(config.model_name.clone());
+            
+            eprintln!("🔍 デバッグ: モデルリポジトリ作成成功");
 
             println!("    - config.json");
             let config_file = model_repo
@@ -192,6 +207,7 @@ impl EmbeddingModel {
     }
 
     /// Encode multiple texts into vectors
+    #[allow(dead_code)]
     pub fn encode_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
         texts.iter().map(|t| self.encode(t)).collect()
     }

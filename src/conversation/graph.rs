@@ -1,7 +1,5 @@
 // Conversation graph data structures
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Conversation graph
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,11 +73,13 @@ impl ConversationGraph {
     }
 
     /// Get node by id
+    #[allow(dead_code)]
     pub fn get_node(&self, id: &str) -> Option<&ConversationNode> {
         self.nodes.iter().find(|n| n.id == id)
     }
 
     /// Get related nodes
+    #[allow(dead_code)]
     pub fn get_related_nodes(&self, id: &str) -> Vec<&ConversationNode> {
         let related_ids: Vec<String> = self
             .edges
@@ -96,11 +96,30 @@ impl ConversationGraph {
     }
 
     /// Get nodes by topic
+    #[allow(dead_code)]
     pub fn get_nodes_by_topic(&self, topic_id: &str) -> Vec<&ConversationNode> {
         self.nodes
             .iter()
             .filter(|n| n.topic_id.as_ref() == Some(&topic_id.to_string()))
             .collect()
+    }
+
+    /// Get context window around a message
+    pub fn get_context_window(&self, id: &str, window_size: usize) -> Vec<&ConversationNode> {
+        if let Some(pos) = self.nodes.iter().position(|n| n.id == id) {
+            let start = pos.saturating_sub(window_size);
+            let end = (pos + window_size + 1).min(self.nodes.len());
+            
+            self.nodes[start..end].iter().collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// Get most recent messages
+    #[allow(dead_code)]
+    pub fn get_recent_messages(&self, count: usize) -> Vec<&ConversationNode> {
+        self.nodes.iter().rev().take(count).collect()
     }
 
     /// Calculate statistics

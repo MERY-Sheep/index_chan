@@ -3,39 +3,41 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::graph::{CodeGraph, CodeNode, DependencyEdge, EdgeType, NodeType};
-use crate::parser::TypeScriptParser;
+use crate::parser::{CodeParser, Language};
 
 pub struct Scanner {
-    parser: TypeScriptParser,
+    // No longer holds a single parser
 }
 
 impl Scanner {
     pub fn new() -> Result<Self> {
-        Ok(Self {
-            parser: TypeScriptParser::new()?,
-        })
+        Ok(Self {})
     }
 
     pub fn scan_directory(&mut self, dir: &Path) -> Result<CodeGraph> {
         let mut graph = CodeGraph::new();
         let mut file_count = 0;
 
-        // Collect all TypeScript files
-        let ts_files: Vec<PathBuf> = WalkDir::new(dir)
+        // Collect all supported files (TypeScript and Rust)
+        let code_files: Vec<(PathBuf, Language)> = WalkDir::new(dir)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path().extension().and_then(|s| s.to_str()) == Some("ts")
-                    || e.path().extension().and_then(|s| s.to_str()) == Some("tsx")
+            .filter_map(|e| {
+                let path = e.path();
+                let ext = path.extension()?.to_str()?;
+                let lang = Language::from_extension(ext)?;
+                Some((path.to_path_buf(), lang))
             })
-            .map(|e| e.path().to_path_buf())
             .collect();
 
-        println!("📂 Found {} TypeScript files", ts_files.len());
+        let ts_count = code_files.iter().filter(|(_, lang)| *lang == Language::TypeScript).count();
+        let rs_count = code_files.iter().filter(|(_, lang)| *lang == Language::Rust).count();
+        
+        println!("📂 Found {} files (TypeScript: {}, Rust: {})", code_files.len(), ts_count, rs_count);
 
         // First pass: collect all function/class definitions
-        for file_path in &ts_files {
-            if let Err(e) = self.scan_file(file_path, &mut graph) {
+        for (file_path, language) in &code_files {
+            if let Err(e) = self.scan_file(file_path, *language, &mut graph) {
                 eprintln!("⚠️  Failed to scan {}: {}", file_path.display(), e);
             } else {
                 file_count += 1;
@@ -46,8 +48,8 @@ impl Scanner {
         println!("📊 Found {} nodes", graph.nodes.len());
 
         // Second pass: build dependency edges
-        for file_path in &ts_files {
-            if let Err(e) = self.build_dependencies(file_path, &mut graph) {
+        for (file_path, language) in &code_files {
+            if let Err(e) = self.build_dependencies(file_path, *language, &mut graph) {
                 eprintln!(
                     "⚠️  Failed to build dependencies for {}: {}",
                     file_path.display(),
@@ -61,16 +63,16 @@ impl Scanner {
         Ok(graph)
     }
 
-    fn scan_file(&mut self, path: &Path, graph: &mut CodeGraph) -> Result<()> {
+    fn scan_file(&mut self, path: &Path, language: Language, graph: &mut CodeGraph) -> Result<()> {
         let source = std::fs::read_to_string(path)
             .context(format!("Failed to read file: {}", path.display()))?;
 
-        let tree = self
-            .parser
+        let mut parser = CodeParser::new(language)?;
+        let tree = parser
             .parse_file(path)
             .context("Failed to parse file")?;
 
-        let functions = self.parser.extract_functions(&tree, &source);
+        let functions = parser.extract_functions(&tree, &source);
 
         for func in functions {
             let node = CodeNode {
@@ -88,17 +90,17 @@ impl Scanner {
         Ok(())
     }
 
-    fn build_dependencies(&mut self, path: &Path, graph: &mut CodeGraph) -> Result<()> {
+    fn build_dependencies(&mut self, path: &Path, language: Language, graph: &mut CodeGraph) -> Result<()> {
         let source = std::fs::read_to_string(path)
             .context(format!("Failed to read file: {}", path.display()))?;
 
-        let tree = self
-            .parser
+        let mut parser = CodeParser::new(language)?;
+        let tree = parser
             .parse_file(path)
             .context("Failed to parse file")?;
 
         // Extract function calls
-        let calls = self.parser.extract_calls(&tree, &source);
+        let calls = parser.extract_calls(&tree, &source);
 
         // Find matching nodes and create edges
         for call in calls {
