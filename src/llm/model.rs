@@ -43,25 +43,37 @@ impl LLMModel {
             )
         } else {
             println!("  HuggingFace Hubからダウンロード中...");
+            println!("  💡 初回実行時は数分かかる場合があります");
 
             // Download model from HuggingFace Hub using model() method
-            let api = Api::new()?;
+            let api = Api::new().context(
+                "HuggingFace APIの初期化に失敗しました\n\
+                 💡 トラブルシューティング:\n\
+                    1. インターネット接続を確認してください\n\
+                    2. ファイアウォール内の場合はプロキシ設定を確認してください\n\
+                    3. HuggingFace Hubがダウンしている場合は後で再試行してください"
+            )?;
             let model_repo = api.model(config.model_name.clone());
 
             println!("    - config.json");
             let config_file = model_repo
                 .get("config.json")
-                .context("config.jsonのダウンロードに失敗しました")?;
+                .context("config.jsonのダウンロードに失敗しました\n\
+                         💡 モデルが存在しないか、ネットワーク接続に失敗しました")?;
 
             println!("    - tokenizer.json");
             let tokenizer_file = model_repo
                 .get("tokenizer.json")
                 .context("tokenizer.jsonのダウンロードに失敗しました")?;
 
-            println!("    - model.safetensors");
+            println!("    - model.safetensors (~3GB)");
             let model_file = model_repo
                 .get("model.safetensors")
-                .context("model.safetensorsのダウンロードに失敗しました")?;
+                .context("model.safetensorsのダウンロードに失敗しました\n\
+                         💡 このファイルは大きいです(~3GB)。以下を確認してください:\n\
+                            - 安定したインターネット接続\n\
+                            - 十分なディスク容量\n\
+                            - 時間がかかります(5-10分程度)")?;
 
             (config_file, tokenizer_file, model_file)
         };
@@ -71,14 +83,24 @@ impl LLMModel {
             .map_err(|e| anyhow::anyhow!("トークナイザーのロードに失敗: {}", e))?;
 
         println!("  モデル設定をロード中...");
-        let model_config: Qwen2Config = serde_json::from_reader(std::fs::File::open(config_file)?)?;
+        let model_config: Qwen2Config = serde_json::from_reader(std::fs::File::open(config_file)?)
+            .context("モデル設定の解析に失敗しました")?;
 
         println!("  モデルの重みをロード中...");
-        // Use BF16 for better compatibility with Qwen models
+        println!("  💡 約3GBのRAMが必要です");
+        // Use F32 for better compatibility
         let dtype = candle_core::DType::F32;
-        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[model_file], dtype, &device)? };
+        let vb = unsafe { 
+            VarBuilder::from_mmaped_safetensors(&[model_file], dtype, &device)
+                .context("モデルの重みのロードに失敗しました\n\
+                         💡 考えられる原因:\n\
+                            - メモリ不足(約3GBのRAMが必要)\n\
+                            - モデルファイルの破損(~/.cache/huggingfaceを削除してみてください)\n\
+                            - 互換性のないモデル形式")?
+        };
 
-        let model = Qwen2Model::new(&model_config, vb)?;
+        let model = Qwen2Model::new(&model_config, vb)
+            .context("モデルの初期化に失敗しました")?;
 
         println!("✅ モデルのロード完了");
 
@@ -97,8 +119,6 @@ impl LLMModel {
             prompt
         );
 
-        println!("  フォーマット済みプロンプト:\n{}", formatted_prompt);
-
         // Tokenize input
         let encoding = self
             .tokenizer
@@ -107,6 +127,14 @@ impl LLMModel {
 
         let tokens = encoding.get_ids();
         println!("  入力トークン数: {}", tokens.len());
+
+        if tokens.len() > 2000 {
+            anyhow::bail!(
+                "入力が長すぎます: {}トークン (最大2000)\n\
+                 💡 コンテキストを減らすか、分析を分割してください",
+                tokens.len()
+            );
+        }
 
         // Generate tokens
         let mut generated_tokens = tokens.to_vec();
@@ -150,12 +178,12 @@ impl LLMModel {
             generated_tokens.push(next_token);
 
             if (step + 1) % 10 == 0 {
-                println!("  生成中... {} トークン", step + 1);
+                println!("  生成中... {}トークン", step + 1);
             }
         }
 
         println!(
-            "  生成完了: {} トークン",
+            "  生成完了: {}トークン",
             generated_tokens.len() - tokens.len()
         );
 

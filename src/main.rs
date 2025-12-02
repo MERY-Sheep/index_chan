@@ -9,12 +9,14 @@ use scanner::Scanner;
 
 mod annotator;
 mod cleaner;
+mod conversation;
 mod detector;
 mod graph;
 mod llm;
 mod parser;
 mod reporter;
 mod scanner;
+mod search;
 
 #[derive(Parser)]
 #[command(name = "index-chan")]
@@ -89,6 +91,65 @@ enum Commands {
         #[arg(long)]
         tokenizer_only: bool,
     },
+
+    /// Test embedding model
+    TestEmbedding {
+        /// Text to encode (optional)
+        #[arg(short, long)]
+        text: Option<String>,
+
+        /// Compare similarity between two texts
+        #[arg(long)]
+        compare: bool,
+    },
+
+    /// Create search index for code
+    Index {
+        /// Target directory to index
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Output index file
+        #[arg(short, long, value_name = "FILE", default_value = ".index-chan/index.json")]
+        output: PathBuf,
+    },
+
+    /// Search for code
+    Search {
+        /// Search query
+        #[arg(value_name = "QUERY")]
+        query: String,
+
+        /// Index file to search
+        #[arg(short, long, value_name = "FILE", default_value = ".index-chan/index.json")]
+        index: PathBuf,
+
+        /// Number of results to return
+        #[arg(short = 'k', long, default_value = "10")]
+        top_k: usize,
+
+        /// Include context in results
+        #[arg(long)]
+        context: bool,
+    },
+
+    /// Analyze chat history
+    AnalyzeChat {
+        /// Chat history JSON file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+
+        /// Output graph file
+        #[arg(short, long, value_name = "FILE")]
+        output: Option<PathBuf>,
+    },
+
+    /// Extract topics from chat history
+    Topics {
+        /// Chat history JSON file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -102,7 +163,7 @@ fn main() -> Result<()> {
         } => {
             println!("🔍 Scanning directory: {}", directory.display());
             if llm {
-                println!("🤖 LLM分析モード有効");
+                println!("🤖 LLM analysis mode enabled");
             }
             println!();
 
@@ -123,7 +184,7 @@ fn main() -> Result<()> {
 
             // LLM analysis if requested
             if llm {
-                println!("🤖 LLMで分析中...");
+                println!("🤖 Analyzing with LLM...");
                 let llm_config = llm::LLMConfig::default();
                 let mut llm_analyzer = llm::LLMAnalyzer::new(llm_config, true)?;
                 let context_collector = llm::ContextCollector::new(&directory);
@@ -134,7 +195,7 @@ fn main() -> Result<()> {
                         Ok(analysis) => {
                             // Update reason with LLM analysis
                             code.reason = format!(
-                                "{} (確信度: {:.0}%)",
+                                "{} (confidence: {:.0}%)",
                                 analysis.reason,
                                 analysis.confidence * 100.0
                             );
@@ -147,11 +208,11 @@ fn main() -> Result<()> {
                             }
                         }
                         Err(e) => {
-                            eprintln!("⚠️  LLM分析エラー ({}): {}", code.node.name, e);
+                            eprintln!("⚠️  LLM analysis error ({}): {}", code.node.name, e);
                         }
                     }
                 }
-                println!("✅ LLM分析完了\n");
+                println!("✅ LLM analysis completed\n");
             }
 
             print_report(&dead_code, total_files, total_functions);
@@ -184,25 +245,25 @@ fn main() -> Result<()> {
             let dead_code = detect_dead_code(&graph);
 
             if dead_code.is_empty() {
-                println!("✨ デッドコードは見つかりませんでした");
+                println!("✨ No dead code found");
                 return Ok(());
             }
 
-            println!("\n削除候補: {}個", dead_code.len());
+            println!("\nDeletion candidates: {} items", dead_code.len());
 
-            // クリーニング実行
+            // Execute cleaning
             let cleaner = Cleaner::new(dry_run, auto, safe_only);
             let result = cleaner.clean(&dead_code)?;
 
-            println!("\n📊 結果:");
+            println!("\n📊 Results:");
             println!(
-                "  削除: {}個 ({}行)",
+                "  Deleted: {} items ({} lines)",
                 result.deleted_count, result.deleted_lines
             );
-            println!("  スキップ: {}個", result.skipped_count);
+            println!("  Skipped: {} items", result.skipped_count);
 
             if dry_run {
-                println!("\n💡 実際に削除するには --dry-run を外してください");
+                println!("\n💡 Remove --dry-run flag to actually delete");
             }
 
             Ok(())
@@ -212,12 +273,12 @@ fn main() -> Result<()> {
             llm,
             dry_run,
         } => {
-            println!("📝 アノテーション追加: {}", directory.display());
+            println!("📝 Adding annotations: {}", directory.display());
             if llm {
-                println!("🤖 LLM分析モード有効");
+                println!("🤖 LLM analysis mode enabled");
             }
             if dry_run {
-                println!("(ドライランモード)");
+                println!("(Dry run mode)");
             }
             println!();
 
@@ -228,17 +289,17 @@ fn main() -> Result<()> {
             let dead_code = detect_dead_code(&graph);
 
             if dead_code.is_empty() {
-                println!("✨ デッドコードは見つかりませんでした");
+                println!("✨ No dead code found");
                 return Ok(());
             }
 
-            println!("📊 検出結果: {}個の未使用関数", dead_code.len());
+            println!("📊 Detection results: {} unused functions", dead_code.len());
 
             // LLM analysis if requested
             let mut annotator = annotator::Annotator::new(dry_run);
 
             if llm {
-                println!("🤖 LLMで分析中...");
+                println!("🤖 Analyzing with LLM...");
                 let llm_config = llm::LLMConfig::default();
                 let mut llm_analyzer = llm::LLMAnalyzer::new(llm_config, true)?;
                 let context_collector = llm::ContextCollector::new(&directory);
@@ -262,26 +323,26 @@ fn main() -> Result<()> {
                             );
                         }
                         Err(e) => {
-                            eprintln!("⚠️  LLM分析エラー ({}): {}", code.node.name, e);
+                            eprintln!("⚠️  LLM analysis error ({}): {}", code.node.name, e);
                         }
                     }
                 }
 
                 annotator = annotator.with_llm_analyses(analyses);
-                println!("✅ LLM分析完了\n");
+                println!("✅ LLM analysis completed\n");
             }
 
             // アノテーション追加
             let result = annotator.annotate(&dead_code)?;
 
-            println!("\n📝 結果:");
-            println!("  アノテーション追加: {}個", result.annotated_count);
-            println!("  スキップ: {}個", result.skipped_count);
+            println!("\n📝 Results:");
+            println!("  Annotations added: {} items", result.annotated_count);
+            println!("  Skipped: {} items", result.skipped_count);
 
             if dry_run {
-                println!("\n💡 実際に追加するには --dry-run を外してください");
+                println!("\n💡 Remove --dry-run flag to actually add annotations");
             } else {
-                println!("\n✅ アノテーションを追加しました");
+                println!("\n✅ Annotations added successfully");
             }
 
             Ok(())
@@ -291,112 +352,358 @@ fn main() -> Result<()> {
             list_files,
             tokenizer_only,
         } => {
-            println!("🤖 LLM推論テスト開始\n");
+            println!("🤖 Starting LLM inference test\n");
 
             let config = llm::LLMConfig::default();
 
             if list_files {
-                println!("📂 モデルリポジトリのファイル一覧を確認中...");
-                println!("  モデル: {}\n", config.model_name);
+                println!("📂 Checking model repository files...");
+                println!("  Model: {}\n", config.model_name);
 
                 use hf_hub::api::sync::Api;
                 let api = Api::new()?;
                 let model_repo = api.model(config.model_name.clone());
 
-                println!("💡 以下のファイルをダウンロード試行します:");
+                println!("💡 Attempting to download the following files:");
                 let files = vec!["config.json", "tokenizer.json", "model.safetensors"];
                 for file in files {
                     print!("  {} ... ", file);
                     match model_repo.get(file) {
-                        Ok(path) => println!("✅ 存在 ({})", path.display()),
-                        Err(e) => println!("❌ エラー: {}", e),
+                        Ok(path) => println!("✅ Exists ({})", path.display()),
+                        Err(e) => println!("❌ Error: {}", e),
                     }
                 }
                 return Ok(());
             }
 
             let test_prompt = prompt.unwrap_or_else(|| {
-                "この関数は削除しても安全ですか？\n\nfunction unusedHelper() {\n  return 42;\n}"
+                "Is this function safe to delete?\n\nfunction unusedHelper() {\n  return 42;\n}"
                     .to_string()
             });
 
-            println!("📝 プロンプト:");
+            println!("📝 Prompt:");
             println!("{}\n", test_prompt);
 
-            println!("🔧 モデル設定:");
-            println!("  モデル名: {}", config.model_name);
-            println!("  最大トークン数: {}", config.max_tokens);
-            println!("  温度: {}", config.temperature);
+            println!("🔧 Model configuration:");
+            println!("  Model name: {}", config.model_name);
+            println!("  Max tokens: {}", config.max_tokens);
+            println!("  Temperature: {}", config.temperature);
             println!();
 
             if tokenizer_only {
-                println!("🔧 トークナイザーのみテスト\n");
+                println!("🔧 Testing tokenizer only\n");
 
                 use tokenizers::Tokenizer;
                 let tokenizer_path = std::path::PathBuf::from("models/tokenizer.json");
 
                 if !tokenizer_path.exists() {
                     eprintln!(
-                        "❌ tokenizer.jsonが見つかりません: {}",
+                        "❌ tokenizer.json not found: {}",
                         tokenizer_path.display()
                     );
                     return Ok(());
                 }
 
-                println!("📥 トークナイザーをロード中...");
+                println!("📥 Loading tokenizer...");
                 let tokenizer = Tokenizer::from_file(tokenizer_path)
-                    .map_err(|e| anyhow::anyhow!("トークナイザーのロードに失敗: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Failed to load tokenizer: {}", e))?;
 
-                println!("✅ トークナイザーのロード完了\n");
+                println!("✅ Tokenizer loaded successfully\n");
 
-                println!("🔤 エンコードテスト:");
+                println!("🔤 Encoding test:");
                 let encoding = tokenizer
                     .encode(test_prompt.as_str(), true)
-                    .map_err(|e| anyhow::anyhow!("エンコードに失敗: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Failed to encode: {}", e))?;
 
                 let tokens = encoding.get_ids();
-                println!("  トークン数: {}", tokens.len());
-                println!("  トークンID: {:?}", &tokens[..tokens.len().min(10)]);
+                println!("  Token count: {}", tokens.len());
+                println!("  Token IDs: {:?}", &tokens[..tokens.len().min(10)]);
 
-                println!("\n🔤 デコードテスト:");
+                println!("\n🔤 Decoding test:");
                 let decoded = tokenizer
                     .decode(tokens, true)
-                    .map_err(|e| anyhow::anyhow!("デコードに失敗: {}", e))?;
-                println!("  デコード結果: {}", decoded);
+                    .map_err(|e| anyhow::anyhow!("Failed to decode: {}", e))?;
+                println!("  Decoded result: {}", decoded);
 
-                println!("\n✅ トークナイザーは正常に動作しています");
+                println!("\n✅ Tokenizer is working correctly");
                 return Ok(());
             }
 
-            println!("📥 モデルをロード中...");
-            println!("  (初回実行時は数分かかる場合があります)");
-            println!("  💡 ファイル確認: cargo run -- test-llm --list-files");
-            println!("  💡 トークナイザーのみテスト: cargo run -- test-llm --tokenizer-only\n");
+            println!("📥 Loading model...");
+            println!("  (First run may take several minutes)");
+            println!("  💡 Check files: cargo run -- test-llm --list-files");
+            println!("  💡 Test tokenizer only: cargo run -- test-llm --tokenizer-only\n");
 
             match llm::LLMModel::new(config) {
                 Ok(mut model) => {
-                    println!("\n🚀 推論実行中...");
+                    println!("\n🚀 Running inference...");
 
                     match model.generate(&test_prompt) {
                         Ok(response) => {
-                            println!("\n✅ 推論成功！\n");
-                            println!("📤 応答:");
+                            println!("\n✅ Inference successful!\n");
+                            println!("📤 Response:");
                             println!("{}", response);
                         }
                         Err(e) => {
-                            eprintln!("\n❌ 推論エラー: {}", e);
+                            eprintln!("\n❌ Inference error: {}", e);
                             return Err(e);
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("\n❌ モデルロードエラー: {}", e);
-                    eprintln!("\n💡 トラブルシューティング:");
-                    eprintln!("  1. インターネット接続を確認してください");
-                    eprintln!("  2. HuggingFace Hubへのアクセスが可能か確認してください");
-                    eprintln!("  3. ディスク容量を確認してください（約2GB必要）");
+                    eprintln!("\n❌ Model loading error: {}", e);
+                    eprintln!("\n💡 Troubleshooting:");
+                    eprintln!("  1. Check your internet connection");
+                    eprintln!("  2. Verify access to HuggingFace Hub");
+                    eprintln!("  3. Check disk space (approximately 2GB required)");
                     return Err(e);
                 }
+            }
+
+            Ok(())
+        }
+        Commands::Index { directory, output } => {
+            println!("📚 Creating index: {}", directory.display());
+            println!();
+
+            // Scan directory
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&directory)?;
+
+            println!("📊 Found {} functions", graph.nodes.len());
+
+            // Create index
+            let mut index = search::CodeIndex::new()?;
+
+            for (_id, node) in &graph.nodes {
+                // Get dependencies
+                let dependencies: Vec<String> = graph
+                    .edges
+                    .iter()
+                    .filter(|e| e.from == node.id)
+                    .filter_map(|e| graph.nodes.get(&e.to).map(|n| n.name.clone()))
+                    .collect();
+
+                let metadata = search::index::CodeMetadata {
+                    file_path: node.file_path.clone(),
+                    function_name: node.name.clone(),
+                    start_line: node.line_range.0,
+                    end_line: node.line_range.1,
+                    code_snippet: format!("{:?}", node.node_type), // TODO: Get actual code snippet
+                    dependencies,
+                };
+                index.add(metadata)?;
+            }
+
+            println!("✅ Indexed {} items", index.len());
+
+            // Save index
+            if let Some(parent) = output.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            index.save(&output)?;
+
+            println!("💾 Index saved to: {}", output.display());
+
+            Ok(())
+        }
+        Commands::Search {
+            query,
+            index: index_path,
+            top_k,
+            context,
+        } => {
+            println!("🔍 Searching: {}", query);
+            println!();
+
+            // Load index
+            let mut index = search::CodeIndex::new()?;
+            
+            if !index_path.exists() {
+                eprintln!("❌ Index file not found: {}", index_path.display());
+                eprintln!("💡 Create index first: index-chan index <directory>");
+                return Ok(());
+            }
+
+            index.load(&index_path)?;
+            println!("📚 Loaded index: {} items", index.len());
+            println!();
+
+            // Search
+            let results = index.search(&query, top_k)?;
+
+            if results.is_empty() {
+                println!("No results found");
+                return Ok(());
+            }
+
+            println!("📊 Found {} results:\n", results.len());
+
+            for (i, result) in results.iter().enumerate() {
+                println!("{}. {} (score: {:.2})", i + 1, result.metadata.function_name, result.score);
+                println!("   📄 {}:{}:{}", 
+                    result.metadata.file_path.display(),
+                    result.metadata.start_line,
+                    result.metadata.end_line
+                );
+                
+                if context {
+                    println!("   📝 Code:");
+                    for line in result.metadata.code_snippet.lines().take(5) {
+                        println!("      {}", line);
+                    }
+                    if result.metadata.code_snippet.lines().count() > 5 {
+                        println!("      ...");
+                    }
+                }
+                
+                if !result.metadata.dependencies.is_empty() {
+                    println!("   🔗 Dependencies: {}", result.metadata.dependencies.join(", "));
+                }
+                
+                println!();
+            }
+
+            Ok(())
+        }
+        Commands::AnalyzeChat { file, output } => {
+            println!("💬 Analyzing chat history: {}", file.display());
+            println!();
+
+            if !file.exists() {
+                eprintln!("❌ File not found: {}", file.display());
+                return Ok(());
+            }
+
+            // Analyze chat
+            let analyzer = conversation::ConversationAnalyzer::new()?;
+            let mut graph = analyzer.analyze_file(&file)?;
+
+            println!("📊 Chat statistics:");
+            let stats = graph.stats();
+            println!("  Messages: {}", stats.total_messages);
+            println!("  Edges: {}", stats.total_edges);
+            println!("  Avg edges per message: {:.2}", stats.avg_edges_per_node);
+            println!();
+
+            // Detect topics
+            let topic_detector = conversation::TopicDetector::new();
+            topic_detector.detect_topics(&mut graph)?;
+
+            println!("📚 Topics detected: {}", graph.topics.len());
+            for topic in &graph.topics {
+                println!("  - {} ({} messages)", topic.name, topic.message_ids.len());
+            }
+            println!();
+
+            // Calculate token reduction
+            let reduction = analyzer.calculate_token_reduction(&graph);
+            println!("🎯 Token reduction:");
+            println!("  Total tokens: {}", reduction.total_tokens);
+            println!("  Relevant tokens: {}", reduction.relevant_tokens);
+            println!("  Reduction rate: {:.1}%", reduction.reduction_rate * 100.0);
+
+            // Save graph
+            if let Some(output_path) = output {
+                let json = serde_json::to_string_pretty(&graph)?;
+                std::fs::write(&output_path, json)?;
+                println!("\n💾 Graph saved to: {}", output_path.display());
+            }
+
+            Ok(())
+        }
+        Commands::Topics { file } => {
+            println!("📚 Extracting topics: {}", file.display());
+            println!();
+
+            if !file.exists() {
+                eprintln!("❌ File not found: {}", file.display());
+                return Ok(());
+            }
+
+            // Analyze chat
+            let analyzer = conversation::ConversationAnalyzer::new()?;
+            let mut graph = analyzer.analyze_file(&file)?;
+
+            // Detect topics
+            let topic_detector = conversation::TopicDetector::new();
+            topic_detector.detect_topics(&mut graph)?;
+
+            if graph.topics.is_empty() {
+                println!("No topics found");
+                return Ok(());
+            }
+
+            println!("📊 Found {} topics:\n", graph.topics.len());
+
+            for (i, topic) in graph.topics.iter().enumerate() {
+                println!("{}. {}", i + 1, topic.name);
+                println!("   Messages: {}", topic.message_ids.len());
+                println!("   Keywords: {}", topic.keywords.join(", "));
+                println!();
+            }
+
+            Ok(())
+        }
+        Commands::TestEmbedding { text, compare } => {
+            println!("🧪 Embeddingモデルのテスト\n");
+
+            let config = search::embeddings::EmbeddingConfig::default();
+            println!("📝 設定:");
+            println!("  モデル: {}", config.model_name);
+            println!("  次元数: {}", config.dimension);
+            println!("  最大長: {}\n", config.max_length);
+
+            println!("📥 モデルをロード中...");
+            let model = search::embeddings::EmbeddingModel::new(config)?;
+            println!();
+
+            if compare {
+                let text1 = "function authenticate(user, password) { return true; }";
+                let text2 = "function login(username, pwd) { return checkCredentials(username, pwd); }";
+                let text3 = "function calculateTotal(items) { return items.reduce((sum, item) => sum + item.price, 0); }";
+
+                println!("📊 類似度比較テスト:\n");
+                println!("テキスト1: {}", text1);
+                println!("テキスト2: {}", text2);
+                println!("テキスト3: {}\n", text3);
+
+                println!("🔄 エンコード中...");
+                let vec1 = model.encode(text1)?;
+                let vec2 = model.encode(text2)?;
+                let vec3 = model.encode(text3)?;
+
+                let sim_1_2 = search::embeddings::EmbeddingModel::cosine_similarity(&vec1, &vec2);
+                let sim_1_3 = search::embeddings::EmbeddingModel::cosine_similarity(&vec1, &vec3);
+                let sim_2_3 = search::embeddings::EmbeddingModel::cosine_similarity(&vec2, &vec3);
+
+                println!("\n📈 類似度スコア:");
+                println!("  テキスト1 vs テキスト2 (認証関連): {:.4}", sim_1_2);
+                println!("  テキスト1 vs テキスト3 (異なる機能): {:.4}", sim_1_3);
+                println!("  テキスト2 vs テキスト3 (異なる機能): {:.4}", sim_2_3);
+
+                println!("\n💡 期待される結果:");
+                println!("  - 認証関連の関数同士（1 vs 2）の類似度が高い");
+                println!("  - 異なる機能の関数（1 vs 3, 2 vs 3）の類似度が低い");
+            } else {
+                let test_text = text.unwrap_or_else(|| {
+                    "function getUserById(id) { return database.query('SELECT * FROM users WHERE id = ?', [id]); }".to_string()
+                });
+
+                println!("📝 テキスト:");
+                println!("{}\n", test_text);
+
+                println!("🔄 エンコード中...");
+                let vector = model.encode(&test_text)?;
+
+                println!("\n✅ エンコード成功!");
+                println!("  ベクトル次元: {}", vector.len());
+                println!("  最初の10要素: {:?}", &vector[..10.min(vector.len())]);
+
+                // Calculate L2 norm
+                let norm: f32 = vector.iter().map(|x| x * x).sum::<f32>().sqrt();
+                println!("  L2ノルム: {:.6}", norm);
+                println!("\n💡 L2ノルムが1.0に近い場合、正規化されています");
             }
 
             Ok(())

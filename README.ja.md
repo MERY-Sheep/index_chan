@@ -1,11 +1,15 @@
-# index-chan
-
-[日本語](README.ja.md) | [English](README.md)
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-
-TypeScriptプロジェクトのデッドコード検出CLI（Phase 1）
+<div align="center">
+  <img src="ascii_image.png" alt="index-chan" width="600">
+  
+  # index-chan
+  
+  [日本語](README.ja.md) | [English](README.md)
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
+  
+  TypeScriptプロジェクトのデッドコード検出CLI（Phase 1）
+</div>
 
 ## 概要
 
@@ -180,7 +184,7 @@ function experimentalFeature() {
 
 ## 開発状況とロードマップ
 
-### 現在の位置: Phase 1.5（LLM統合）完了 ✅
+### 現在の位置: Phase 2（検索 + 会話グラフ基礎）進行中 🚧
 
 このプロジェクトは段階的に開発されています：
 
@@ -192,14 +196,15 @@ function experimentalFeature() {
 - ローカルLLMによる高精度分析
 - 「将来使う予定」のコード識別
 
-**Phase 2: 多言語対応**（計画中）
-- Rust, Python, Go, Javaなどへの対応
-- より高度な依存関係解析
+**Phase 2: 検索 + 会話グラフ基礎** 🚧 進行中
+- ベクトル検索によるコード検索
+- 会話グラフによるチャット履歴分析
+- トークン削減（40-60%目標）
+- Python対応追加
 
-**Phase 3: コード依存グラフ型検索システム**（将来）
-- ベクトル検索 + グラフ探索
-- LLM向け最適化コンテキスト提供
-- 統合コンテキスト編集
+**Phase 3: TBD**（Phase 2完了後に決定）
+- ユーザーフィードバックに基づいて方向性を決定
+- 選択肢: 高度な編集機能、エンタープライズ機能、カスタムLLMなど
 
 詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
 
@@ -216,8 +221,18 @@ function experimentalFeature() {
 - [x] コンテキスト収集（Git履歴）
 - [x] 高精度分析
 
-### Phase 1.5 改善予定
-- [ ] 実プロジェクトでの精度検証
+### Phase 2 進行中 🚧
+- [x] ベクトル検索基盤（Week 1）
+- [x] 会話グラフ基盤（Week 1）
+- [x] CLI統合（Week 1）
+- [x] Embeddingモデル統合（Week 2）✅
+  - CandleによるBERTモデル実装
+  - Mean pooling + L2正規化
+  - フォールバックモード（シンプルハッシュ）
+  - test-embeddingコマンド実装
+- [ ] トピック検出の改善（Week 3-4）
+- [ ] Python対応（Week 11-12）
+- [ ] VSCode拡張（オプション）
 - [ ] プロンプトの最適化
 - [ ] エラーハンドリングの改善
 

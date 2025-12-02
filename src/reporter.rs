@@ -34,12 +34,12 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
         .map(|dc| dc.node.line_range.1 - dc.node.line_range.0 + 1)
         .sum();
 
-    println!("\n{}", "🔍 デッドコード検出結果".bold());
+    println!("\n{}", "🔍 Dead Code Detection Results".bold());
     println!("{}", "━".repeat(50));
     println!();
-    println!("📁 総ファイル数: {}", total_files);
-    println!("📊 総関数数: {}", total_functions);
-    println!("🗑️  未使用関数: {}個 ({}行)", dead_count, dead_lines);
+    println!("📁 Total Files: {}", total_files);
+    println!("📊 Total Functions: {}", total_functions);
+    println!("🗑️  Unused Functions: {} ({} lines)", dead_count, dead_lines);
     println!();
 
     // Group by safety level
@@ -60,41 +60,41 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
 
     if !definitely_safe.is_empty() {
         println!(
-            "{} {}個",
-            "[確実に安全]".green().bold(),
+            "{} {} items",
+            "[Definitely Safe]".green().bold(),
             definitely_safe.len()
         );
         for dc in definitely_safe.iter().take(5) {
             print_dead_code_entry(dc);
         }
         if definitely_safe.len() > 5 {
-            println!("└─ ... 他{}個", definitely_safe.len() - 5);
+            println!("└─ ... {} more", definitely_safe.len() - 5);
         }
         println!();
     }
 
     if !probably_safe.is_empty() {
         println!(
-            "{} {}個",
-            "[おそらく安全]".yellow().bold(),
+            "{} {} items",
+            "[Probably Safe]".yellow().bold(),
             probably_safe.len()
         );
         for dc in probably_safe.iter().take(5) {
             print_dead_code_entry(dc);
         }
         if probably_safe.len() > 5 {
-            println!("└─ ... 他{}個", probably_safe.len() - 5);
+            println!("└─ ... {} more", probably_safe.len() - 5);
         }
         println!();
     }
 
     if !needs_review.is_empty() {
-        println!("{} {}個", "[要確認]".red().bold(), needs_review.len());
+        println!("{} {} items", "[Needs Review]".red().bold(), needs_review.len());
         for dc in needs_review.iter().take(5) {
             print_dead_code_entry(dc);
         }
         if needs_review.len() > 5 {
-            println!("└─ ... 他{}個", needs_review.len() - 5);
+            println!("└─ ... {} more", needs_review.len() - 5);
         }
         println!();
     }
@@ -106,10 +106,10 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
     };
 
     println!(
-        "💾 削減可能な行数: {}行 (全体の {:.1}%)",
+        "💾 Reducible Lines: {} lines ({:.1}% of total)",
         dead_lines, reduction_percent
     );
-    println!("💰 削減可能なトークン数: 約 {}トークン", dead_lines * 20);
+    println!("💰 Reducible Tokens: ~{} tokens", dead_lines * 20);
 }
 
 fn print_dead_code_entry(dc: &DeadCode) {

@@ -1,8 +1,12 @@
-# index-chan
-
-[日本語](README.ja.md) | English
-
-Dead code detection CLI for TypeScript projects (Phase 1)
+<div align="center">
+  <img src="ascii_image.png" alt="index-chan" width="600">
+  
+  # index-chan
+  
+  [日本語](README.ja.md) | English
+  
+  Dead code detection CLI for TypeScript projects (Phase 1)
+</div>
 
 ## Overview
 
@@ -23,11 +27,20 @@ The ultimate goal is to build a "Code Dependency Graph Search System" that combi
 - Interactive and automatic deletion modes
 - Annotation feature (auto-add suppression comments)
 - **🆕 LLM Integration** (Phase 1.5 ✅ Complete)
-- High-precision analysis with Qwen2.5-Coder-1.5B
-- Automatic detection of "planned for future use" code
-- Identification of experimental features and WIP
-- Fully local execution (privacy-preserving)
-- Meaningful responses in Japanese
+  - High-precision analysis with Qwen2.5-Coder-1.5B
+  - Automatic detection of "planned for future use" code
+  - Identification of experimental features and WIP
+  - Fully local execution (privacy-preserving)
+  - Meaningful responses in Japanese
+- **🔍 Code Search** (Phase 2 🚧 In Progress)
+  - Vector-based semantic search
+  - Dependency graph-based related code retrieval
+  - Smart context generation
+- **💬 Conversation Graph** (Phase 2 🚧 In Progress)
+  - Chat history analysis
+  - Automatic topic detection
+  - Token reduction (40-60% target)
+- **🌐 Internationalization** (CLI output in English)
 
 ## Installation
 
@@ -84,6 +97,32 @@ index-chan annotate <directory> --dry-run
 index-chan annotate <directory> --llm
 ```
 
+### Code Search (Phase 2 🚧)
+
+```bash
+# Create search index
+index-chan index <directory>
+
+# Search for code
+index-chan search "authentication"
+
+# Search with context
+index-chan search "file upload" --context
+
+# Specify number of results
+index-chan search "unused" -k 5
+```
+
+### Conversation Analysis (Phase 2 🚧)
+
+```bash
+# Analyze chat history
+index-chan analyze-chat chat_history.json --output graph.json
+
+# Extract topics
+index-chan topics chat_history.json
+```
+
 ## LLM Mode (Phase 1.5)
 
 ### Overview
@@ -110,7 +149,7 @@ LLM mode uses Qwen2.5-Coder-1.5B for high-precision semantic analysis.
 
 ## Development Status and Roadmap
 
-### Current Position: Phase 1.5 (LLM Integration) Complete ✅
+### Current Position: Phase 2 (Search + Conversation Graph) In Progress 🚧
 
 This project is being developed in stages:
 
@@ -122,14 +161,15 @@ This project is being developed in stages:
 - High-precision analysis with local LLM
 - Identification of "planned for future use" code
 
-**Phase 2: Multi-language Support** (Planned)
-- Support for Rust, Python, Go, Java, etc.
-- Advanced dependency analysis
+**Phase 2: Search + Conversation Graph** 🚧 In Progress
+- Vector-based code search
+- Conversation graph for chat history
+- Token reduction (40-60% target)
+- Python support
 
-**Phase 3: Code Dependency Graph Search System** (Future)
-- Vector search + graph traversal
-- Optimized context provision for LLMs
-- Unified context editing
+**Phase 3: TBD** (To be decided after Phase 2)
+- Direction will be determined based on user feedback
+- Options: Advanced editing, Enterprise features, Custom LLM, etc.
 
 See [docs/VISION.md](docs/VISION.md) for detailed vision.
 
@@ -151,16 +191,26 @@ See [docs/VISION.md](docs/VISION.md) for detailed vision.
 - [ ] Prompt optimization
 - [ ] Enhanced error handling
 
-### Phase 2 Planned (Multi-language Support)
-- [ ] Rust, Python, Go, Java support
-- [ ] Advanced dependency analysis
-- [ ] Incremental updates
+### Phase 2 In Progress 🚧
+- [x] Vector search foundation (Week 1)
+- [x] Conversation graph foundation (Week 1)
+- [x] CLI integration (Week 1)
+- [x] Embedding model integration (Week 2) ✅
+  - BERT model with Candle
+  - Mean pooling + L2 normalization
+  - Fallback mode (simple hash)
+  - test-embedding command
+- [ ] Topic detection improvement (Week 3-4)
+- [ ] Python support (Week 11-12)
+- [ ] VSCode extension (Optional)
 
-### Phase 3 Planned (Search System)
-- [ ] Vector search integration
-- [ ] Hybrid search (vector + graph)
-- [ ] Context optimization for LLMs
-- [ ] Unified context editing
+### Phase 3 Planned (TBD)
+- Direction to be determined after Phase 2 completion
+- Options under consideration:
+  - Advanced editing with conversation graph
+  - Enterprise features
+  - Custom LLM training
+  - Enhanced IDE integration
 
 ## Testing
 

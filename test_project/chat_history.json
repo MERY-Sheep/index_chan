@@ -1,0 +1,42 @@
+[
+  {
+    "timestamp": "2024-12-02T10:00:00Z",
+    "role": "user",
+    "content": "認証機能を実装したいです"
+  },
+  {
+    "timestamp": "2024-12-02T10:01:00Z",
+    "role": "assistant",
+    "content": "認証機能の実装をお手伝いします。JWTトークンを使用した認証を推奨します"
+  },
+  {
+    "timestamp": "2024-12-02T10:05:00Z",
+    "role": "user",
+    "content": "ファイルアップロード機能も追加したい"
+  },
+  {
+    "timestamp": "2024-12-02T10:06:00Z",
+    "role": "assistant",
+    "content": "ファイルアップロード機能を追加します。multerライブラリを使用しましょう"
+  },
+  {
+    "timestamp": "2024-12-02T10:10:00Z",
+    "role": "user",
+    "content": "認証のテストコードも書いてください"
+  },
+  {
+    "timestamp": "2024-12-02T10:11:00Z",
+    "role": "assistant",
+    "content": "認証機能のテストコードを作成します。Jestを使用してテストします"
+  },
+  {
+    "timestamp": "2024-12-02T10:15:00Z",
+    "role": "user",
+    "content": "データベース接続エラーが出ています"
+  },
+  {
+    "timestamp": "2024-12-02T10:16:00Z",
+    "role": "assistant",
+    "content": "データベース接続エラーを確認します。接続文字列を確認してください"
+  }
+]

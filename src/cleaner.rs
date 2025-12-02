@@ -52,17 +52,17 @@ impl Cleaner {
     }
 
     fn confirm_delete(&self, dc: &DeadCode) -> Result<bool> {
-        println!("\n削除候補:");
-        println!("  ファイル: {}", dc.node.file_path.display());
-        println!("  関数名: {}", dc.node.name);
+        println!("\nDeletion candidate:");
+        println!("  File: {}", dc.node.file_path.display());
+        println!("  Function: {}", dc.node.name);
         println!(
-            "  行範囲: {}-{}",
+            "  Line range: {}-{}",
             dc.node.line_range.0, dc.node.line_range.1
         );
-        println!("  安全性: {:?}", dc.safety_level);
-        println!("  理由: {}", dc.reason);
+        println!("  Safety level: {:?}", dc.safety_level);
+        println!("  Reason: {}", dc.reason);
 
-        print!("削除しますか? (y/n): ");
+        print!("Delete? (y/n): ");
         io::stdout().flush()?;
 
         let mut input = String::new();
@@ -74,7 +74,7 @@ impl Cleaner {
     fn delete_code(&self, dc: &DeadCode) -> Result<bool> {
         if self.dry_run {
             println!(
-                "  [DRY RUN] 削除: {}:{}-{}",
+                "  [DRY RUN] Delete: {}:{}-{}",
                 dc.node.file_path.display(),
                 dc.node.line_range.0,
                 dc.node.line_range.1
@@ -82,7 +82,7 @@ impl Cleaner {
             return Ok(true);
         }
 
-        // ファイルを読み込み
+        // Read file
         let content = fs::read_to_string(&dc.node.file_path).context(format!(
             "Failed to read file: {}",
             dc.node.file_path.display()
@@ -90,13 +90,13 @@ impl Cleaner {
 
         let lines: Vec<&str> = content.lines().collect();
 
-        // 削除する行範囲を確認
+        // Verify line range
         let start = dc.node.line_range.0.saturating_sub(1);
         let end = dc.node.line_range.1;
 
         if end > lines.len() {
             eprintln!(
-                "  ⚠️  行範囲が不正: {}-{} (ファイルは{}行)",
+                "  ⚠️  Invalid line range: {}-{} (file has {} lines)",
                 dc.node.line_range.0,
                 dc.node.line_range.1,
                 lines.len()
@@ -104,21 +104,21 @@ impl Cleaner {
             return Ok(false);
         }
 
-        // 削除後の内容を作成
+        // Create content after deletion
         let mut new_lines = Vec::new();
         new_lines.extend_from_slice(&lines[..start]);
         new_lines.extend_from_slice(&lines[end..]);
 
         let new_content = new_lines.join("\n");
 
-        // ファイルに書き込み
+        // Write to file
         fs::write(&dc.node.file_path, new_content).context(format!(
             "Failed to write file: {}",
             dc.node.file_path.display()
         ))?;
 
         println!(
-            "  ✅ 削除完了: {}:{}-{}",
+            "  ✅ Deleted: {}:{}-{}",
             dc.node.file_path.display(),
             dc.node.line_range.0,
             dc.node.line_range.1
