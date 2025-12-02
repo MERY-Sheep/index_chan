@@ -24,3 +24,6 @@ Doc/
 
 # Japanese versions of public docs (for internal review only)
 docs/*.ja.md
+
+# Internal checklists
+PUBLISH_CHECKLIST.md
