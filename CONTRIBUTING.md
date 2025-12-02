@@ -1,94 +1,96 @@
 # Contributing to index-chan
 
-index-chanへの貢献に興味を持っていただきありがとうございます！
+[日本語](CONTRIBUTING.ja.md) | English
 
-## 開発状況
+Thank you for your interest in contributing to index-chan!
 
-現在Phase 1.5（LLM統合）が完了し、Phase 2（多言語対応）の準備中です。
+## Development Status
 
-## 貢献方法
+Phase 1.5 (LLM Integration) is complete, and Phase 2 (Multi-language Support) is in preparation.
 
-### バグ報告
+## How to Contribute
 
-GitHubのIssueで以下の情報を含めて報告してください：
+### Bug Reports
 
-- 実行環境（OS、Rustバージョン）
-- 再現手順
-- 期待される動作と実際の動作
-- エラーメッセージ（あれば）
+Please report bugs via GitHub Issues with the following information:
 
-### 機能提案
+- Environment (OS, Rust version)
+- Steps to reproduce
+- Expected vs actual behavior
+- Error messages (if any)
 
-新機能のアイデアがあれば、Issueで提案してください。
-以下の点を含めると議論がスムーズです：
+### Feature Proposals
 
-- ユースケース
-- 期待される動作
-- 実装の難易度（わかれば）
+If you have ideas for new features, please propose them via Issues.
+Including the following points will facilitate discussion:
 
-### プルリクエスト
+- Use case
+- Expected behavior
+- Implementation difficulty (if known)
 
-1. このリポジトリをフォーク
-2. 機能ブランチを作成（`git checkout -b feature/amazing-feature`）
-3. 変更をコミット（`git commit -m 'feat: 素晴らしい機能を追加'`）
-4. ブランチにプッシュ（`git push origin feature/amazing-feature`）
-5. プルリクエストを作成
+### Pull Requests
 
-### コーディング規約
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-- Rustの標準的なスタイルに従う（`cargo fmt`を実行）
-- `cargo clippy`の警告を解消
-- 可能な限りテストを追加
+### Coding Conventions
 
-### コミットメッセージ
+- Follow standard Rust style (run `cargo fmt`)
+- Resolve `cargo clippy` warnings
+- Add tests when possible
 
-Conventional Commitsに従ってください：
+### Commit Messages
+
+Follow Conventional Commits:
 
 ```
-feat: 新機能
-fix: バグ修正
-docs: ドキュメント変更
-refactor: リファクタリング
-test: テスト追加
-chore: その他の変更
+feat: New feature
+fix: Bug fix
+docs: Documentation changes
+refactor: Refactoring
+test: Add tests
+chore: Other changes
 ```
 
-## 開発環境のセットアップ
+## Development Environment Setup
 
 ```bash
-# リポジトリをクローン
+# Clone the repository
 git clone https://github.com/YOUR_USERNAME/index-chan.git
 cd index-chan
 
-# ビルド
+# Build
 cargo build
 
-# テスト実行
+# Run tests
 cargo run -- scan test_project
 
-# LLMモードのテスト
+# Test LLM mode
 cargo run --release -- test-llm
 ```
 
-## 質問
+## Questions
 
-質問がある場合は、遠慮なくIssueで聞いてください。
+If you have questions, feel free to ask via Issues.
 
-## 重要な注意事項
+## Important Notice
 
-**このプロジェクトは個人の実験的プロジェクトです。**
+**This project is a personal experimental project.**
 
-- 作者はプロフェッショナルなプログラマではありません
-- 本番環境での使用は推奨しません
-- バグや問題が含まれている可能性があります
-- サポートは限定的です（ベストエフォート）
-- 質問への回答は保証できません
+- The author is not a professional programmer
+- Not recommended for production use
+- May contain bugs and issues
+- Support is limited (best effort)
+- Response to questions is not guaranteed
 
-**貢献について:**
-- バグ報告は歓迎しますが、即座の対応は期待しないでください
-- プルリクエストは歓迎しますが、レビューに時間がかかる場合があります
-- このプロジェクトは学習目的で作成されています
+**About Contributions:**
+- Bug reports are welcome, but immediate responses should not be expected
+- Pull requests are welcome, but reviews may take time
+- This project was created for learning purposes
 
-## ライセンス
+## License
 
-貢献したコードはMITライセンスの下で公開されます。
+Contributed code will be published under the MIT License.

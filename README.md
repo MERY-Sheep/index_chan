@@ -1,280 +1,216 @@
 # index-chan
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
+[日本語](README.ja.md) | English
 
-TypeScriptプロジェクトのデッドコード検出CLI（Phase 1）
+Dead code detection CLI for TypeScript projects (Phase 1)
 
-[English README](README.en.md)
+## Overview
 
-## 概要
+**Current Features (Phase 1):**
+index-chan is a CLI tool that detects and safely removes unused code (dead code) in TypeScript projects using AST analysis and LLM-powered semantic understanding.
 
-**現在の機能（Phase 1）:**
-index-chanは、TypeScriptプロジェクト内の未使用コード（デッドコード）を検出し、安全に削除するためのCLIツールです。
+**Future Vision:**
+The ultimate goal is to build a "Code Dependency Graph Search System" that combines dependency graphs with vector search. This will be a next-generation development support tool that enables LLMs to understand and edit code with accurate context. See [docs/VISION.md](docs/VISION.md) for details.
 
-**将来のビジョン:**
-最終的には、依存グラフとベクトル検索を組み合わせた「コード依存グラフ型検索システム」を目指しています。LLMが正確なコンテキストでコードを理解・編集できるようにする次世代の開発支援ツールです。詳細は[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
+**Currently at Phase 1 (Dead Code Detection) stage.**
 
-**現在はPhase 1（デッドコード検出）の段階です。**
+## Features
 
-## 機能
+- TypeScript AST parsing with tree-sitter
+- Dependency graph construction
+- Dead code detection (unused functions, classes)
+- Safety level evaluation (definitely safe / probably safe / needs review)
+- Interactive and automatic deletion modes
+- Annotation feature (auto-add suppression comments)
+- **🆕 LLM Integration** (Phase 1.5 ✅ Complete)
+- High-precision analysis with Qwen2.5-Coder-1.5B
+- Automatic detection of "planned for future use" code
+- Identification of experimental features and WIP
+- Fully local execution (privacy-preserving)
+- Meaningful responses in Japanese
 
-- TypeScriptのAST解析
-- 関数呼び出しの依存グラフ構築
-- 未使用関数・クラスの検出
-- 安全性レベル評価（確実に安全/おそらく安全/要確認）
-- 削除機能（対話的/自動）
-- アノテーション機能（警告抑制コメント自動追加）
-- **🆕 LLM統合**（Phase 1.5 ✅ 完了）
-- Qwen2.5-Coder-1.5Bによる高精度分析
-- 「将来使う予定」の自動検出
-- 実験的機能・WIPの識別
-- 完全ローカル実行（プライバシー保護）
-- 意味のある日本語応答を生成
-
-## インストール
+## Installation
 
 ```bash
 cargo install --path .
 ```
 
-## 使い方
+## Usage
 
-### スキャン（検出のみ）
+### Scan (Detection Only)
 
 ```bash
-# 基本的なスキャン
+# Basic scan
 index-chan scan <directory>
 
-# JSON出力
+# JSON output
 index-chan scan <directory> --output report.json
 
-# LLM分析モード（Phase 1.5 ✅）
+# LLM analysis mode (Phase 1.5 ✅)
 index-chan scan <directory> --llm
 ```
 
-### 削除（対話的）
+### Clean (Interactive)
 
 ```bash
-# 対話的に確認しながら削除
+# Interactive deletion with confirmation
 index-chan clean <directory>
 ```
 
-### 削除（自動、確実に安全なもののみ）
+### Clean (Automatic, Safe Only)
 
 ```bash
-# 確実に安全なもののみ自動削除
+# Auto-delete only definitely safe code
 index-chan clean <directory> --auto --safe-only
 ```
 
-### ドライラン
+### Dry Run
 
 ```bash
-# 実際には削除せず、動作確認のみ
+# Preview without actual deletion
 index-chan clean <directory> --dry-run
 ```
 
-### アノテーション追加
+### Annotation
 
 ```bash
-# 「将来使う予定」のコードに警告抑制アノテーションを追加
+# Add suppression annotations to "future use" code
 index-chan annotate <directory>
 
-# ドライラン
+# Dry run
 index-chan annotate <directory> --dry-run
 
-# LLM分析モード（高精度）
+# LLM analysis mode (high precision)
 index-chan annotate <directory> --llm
 ```
 
-## LLMモード（Phase 1.5）
+## LLM Mode (Phase 1.5)
 
-### 概要
+### Overview
 
-LLMモードでは、Qwen2.5-Coder-1.5Bを使用して高精度な分析を行います。
+LLM mode uses Qwen2.5-Coder-1.5B for high-precision semantic analysis.
 
-**特徴**
-- 完全ローカル実行（コードが外部に送信されない）
-- 「将来使う予定」「実験的機能」「WIP」の自動検出
-- Git履歴を考慮した判断
-- 確信度スコア付き
+**Features:**
+- Fully local execution (no code sent externally)
+- Auto-detection of "planned for future", "experimental", "WIP" code
+- Git history-aware decisions
+- Confidence scores
 
-### 推論テスト
+### System Requirements
 
-```bash
-# トークナイザーのみテスト
-cargo run --release -- test-llm --tokenizer-only
+**LLM Mode:**
+- Memory: 3GB+ recommended
+- Disk: 3GB+ (model cache)
+- First run: ~3GB download
+- Inference speed: ~2s/function (CPU)
 
-# 推論テスト（デフォルトプロンプト）
-cargo run --release -- test-llm
+**Normal Mode:**
+- Memory: tens of MB
+- Disk: few MB
 
-# カスタムプロンプトでテスト
-cargo run --release -- test-llm --prompt "このコードにバグはありますか？"
+## Development Status and Roadmap
 
-# 実際の出力例
-🤖 LLM推論テスト開始
+### Current Position: Phase 1.5 (LLM Integration) Complete ✅
 
-📝 プロンプト:
-この関数は削除しても安全ですか？
+This project is being developed in stages:
 
-function unusedHelper() {
-  return 42;
-}
+**Phase 1: Dead Code Detection CLI** ✅ Complete
+- TypeScript analysis and dependency graph construction
+- Unused code detection and removal
 
-✅ 推論成功！
+**Phase 1.5: LLM Integration** ✅ Complete
+- High-precision analysis with local LLM
+- Identification of "planned for future use" code
 
-📤 応答:
-この関数は削除しても安全です。JavaScript では、関数はスコープ内に存在し、
-関数の定義はそのスコープの外に存在します。つまり、関数はスコープ外
-```
+**Phase 2: Multi-language Support** (Planned)
+- Support for Rust, Python, Go, Java, etc.
+- Advanced dependency analysis
 
-### 実際のプロジェクトでの使用
+**Phase 3: Code Dependency Graph Search System** (Future)
+- Vector search + graph traversal
+- Optimized context provision for LLMs
+- Unified context editing
 
-```bash
-# 初回起動（モデルダウンロード、約3GB）
-cargo run -- scan test_project --llm
+See [docs/VISION.md](docs/VISION.md) for detailed vision.
 
-# 出力例
-🔍 Scanning directory: test_project
-🤖 LLM分析モード有効
+### Phase 1 Completed ✅
+- [x] TypeScript analysis (tree-sitter)
+- [x] Dependency graph construction
+- [x] Dead code detection
+- [x] Deletion features (interactive/auto)
+- [x] Annotation features
 
-📥 初回起動: Qwen2.5-Coder-1.5Bをダウンロード中...
-✅ モデル読み込み完了
+### Phase 1.5 Completed ✅
+- [x] LLM integration (Qwen2.5-Coder-1.5B)
+- [x] Local inference
+- [x] Context collection (Git history)
+- [x] High-precision analysis
 
-🤖 LLMで分析中...
-✅ LLM分析完了
+### Phase 1.5 Improvements Planned
+- [ ] Accuracy validation on real projects
+- [ ] Prompt optimization
+- [ ] Enhanced error handling
 
-[削除推奨] 8個（確信度 95%以上）
-├─ oldAuthMethod: 2年前に作成、新実装に置き換え済み (確信度: 95%)
-└─ deprecatedHelper: コミットログに「deprecated」と記載 (確信度: 98%)
+### Phase 2 Planned (Multi-language Support)
+- [ ] Rust, Python, Go, Java support
+- [ ] Advanced dependency analysis
+- [ ] Incremental updates
 
-[保持推奨] 4個（確信度 85%以上）
-├─ futureFeature: 1週間前に追加、WIP状態 (確信度: 90%)
-└─ experimentalAI: 実験的機能、issue #123で議論中 (確信度: 88%)
-```
+### Phase 3 Planned (Search System)
+- [ ] Vector search integration
+- [ ] Hybrid search (vector + graph)
+- [ ] Context optimization for LLMs
+- [ ] Unified context editing
 
-### LLMアノテーション
-
-```bash
-# LLMで分析して自動アノテーション
-index-chan annotate test_project --llm
-
-# 結果（TypeScriptの例）
-// @ts-ignore - index-chan: 実験的機能、issue #123で議論中
-function experimentalFeature() {
-    // ...
-}
-```
-
-### システム要件
-
-**LLMモード使用時**
-- メモリ: 3GB以上推奨
-- ディスク: 3GB以上（モデルキャッシュ）
-- 初回ダウンロード: 約3GB
-- 推論速度: 約2秒/関数（CPU）
-
-**通常モード**
-- メモリ: 数十MB
-- ディスク: 数MB
-
-## 開発状況とロードマップ
-
-### 現在の位置: Phase 1.5（LLM統合）完了 ✅
-
-このプロジェクトは段階的に開発されています：
-
-**Phase 1: デッドコード検出CLI** ✅ 完了
-- TypeScript解析と依存グラフ構築
-- 未使用コードの検出と削除
-
-**Phase 1.5: LLM統合** ✅ 完了
-- ローカルLLMによる高精度分析
-- 「将来使う予定」のコード識別
-
-**Phase 2: 多言語対応**（計画中）
-- Rust, Python, Go, Javaなどへの対応
-- より高度な依存関係解析
-
-**Phase 3: コード依存グラフ型検索システム**（将来）
-- ベクトル検索 + グラフ探索
-- LLM向け最適化コンテキスト提供
-- 統合コンテキスト編集
-
-詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
-
-### Phase 1 完了項目 ✅
-- [x] TypeScript解析（tree-sitter）
-- [x] 依存グラフ構築
-- [x] デッドコード検出
-- [x] 削除機能（対話的/自動）
-- [x] アノテーション機能
-
-### Phase 1.5 完了項目 ✅
-- [x] LLM統合（Qwen2.5-Coder-1.5B）
-- [x] ローカル推論
-- [x] コンテキスト収集（Git履歴）
-- [x] 高精度分析
-
-### Phase 1.5 改善予定
-- [ ] 実プロジェクトでの精度検証
-- [ ] プロンプトの最適化
-- [ ] エラーハンドリングの改善
-
-### Phase 2 計画（多言語対応）
-- [ ] Rust, Python, Go, Java対応
-- [ ] 高度な依存関係解析
-- [ ] インクリメンタル更新
-
-### Phase 3 計画（検索システム）
-- [ ] ベクトル検索統合
-- [ ] ハイブリッド検索（ベクトル + グラフ）
-- [ ] LLM向けコンテキスト最適化
-- [ ] 統合コンテキスト編集
-
-## テスト
+## Testing
 
 ```bash
-# サンプルプロジェクトでテスト
+# Test with sample project
 cargo run -- scan test_project
 
-# JSON出力
+# JSON output
 cargo run -- scan test_project --output report.json
+
+# LLM inference test
+cargo run --release -- test-llm
 ```
 
-## 免責事項
+## Disclaimer
 
-**このプロジェクトを使用する前に[DISCLAIMER.md](DISCLAIMER.md)を必ずお読みください。**
+**Please read [DISCLAIMER.md](DISCLAIMER.md) before using this project.**
 
-これは個人の実験的プロジェクトです。作者はプロフェッショナルなプログラマではなく、プロフェッショナルなサポートを提供できません。
+This is a personal experimental project. The author is not a professional programmer and cannot provide professional support.
 
-## ライセンス
+## License
 
-MIT License
+MIT License - See [LICENSE](LICENSE) file for details
 
-## 注意事項
+## Documentation
 
-⚠️ **重要な免責事項**
+- [docs/](docs/): Design and vision documents (English)
+- [Doc/](Doc/): Development notes (Japanese, not published)
 
-**このプロジェクトは個人の実験的プロジェクトです。**
+## Contributing
 
-- 作者はプロフェッショナルなプログラマではありません 2025-11-24 start
-- Phase 1.5（LLM統合）が完了したばかりで、まだ不安定です
-- 本番環境での使用は推奨しません
-- バグや問題が含まれている可能性が高いです
-- サポートは限定的です（質問に答えられない場合があります）
-- 使用は自己責任でお願いします
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
-**貢献について:**
-- バグ報告は歓迎しますが、即座の対応は保証できません
-- このプロジェクトは学習・実験目的で作成されています
+## Security
 
-## ドキュメント
+See [SECURITY.md](SECURITY.md) for security policy.
 
-- [docs/](docs/): 設計書・企画書（英語）
-- [Doc/](Doc/): 開発メモ・調査資料（日本語、非公開）
+## Disclaimer
 
-## 貢献
+⚠️ **Important Disclaimer**
 
-現在は個人開発中ですが、Issue・PRは歓迎します。
+**This is a personal experimental project.**
 
+- The author is not a professional programmer
+- Phase 1.5 (LLM Integration) just completed and still unstable
+- Not recommended for production use
+- May contain bugs and issues
+- Support is limited (questions may not be answered)
+- Use at your own risk
+
+**About Contributions:**
+- Bug reports are welcome, but immediate response is not guaranteed
+- This project is created for learning and experimentation purposes
