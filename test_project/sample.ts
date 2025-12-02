@@ -1,6 +1,6 @@
 // Used function
 export function usedFunction() {
-    console.log("This is used");
+    console.log("This is used - updated!");
     helperFunction();
 }
 

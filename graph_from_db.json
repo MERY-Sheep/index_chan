@@ -1,0 +1,245 @@
+{
+  "nodes": {
+    "4": {
+      "id": 0,
+      "name": "helperFunction",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        8,
+        10
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "1": {
+      "id": 0,
+      "name": "deadMethod",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        30,
+        32
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "3": {
+      "id": 0,
+      "name": "usedFunction",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        2,
+        5
+      ],
+      "is_exported": true,
+      "is_used": false
+    },
+    "9": {
+      "id": 0,
+      "name": "usedMethod",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        25,
+        27
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "5": {
+      "id": 0,
+      "name": "unusedExport",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        19,
+        21
+      ],
+      "is_exported": true,
+      "is_used": false
+    },
+    "8": {
+      "id": 0,
+      "name": "helperFunction",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        8,
+        10
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "6": {
+      "id": 0,
+      "name": "deadMethod",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        30,
+        32
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "0": {
+      "id": 0,
+      "name": "usedMethod",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        25,
+        27
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "17": {
+      "id": 0,
+      "name": "futureFeature",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        10,
+        14
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "2": {
+      "id": 0,
+      "name": "deadFunction",
+      "node_type": "Function",
+      "file_path": "C:\\index-chan\\test_project\\sample.ts",
+      "line_range": [
+        14,
+        16
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "10": {
+      "id": 0,
+      "name": "usedFunction",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        2,
+        5
+      ],
+      "is_exported": true,
+      "is_used": false
+    },
+    "15": {
+      "id": 0,
+      "name": "simpleUnused",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        38,
+        40
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "7": {
+      "id": 0,
+      "name": "deadFunction",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        14,
+        16
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "12": {
+      "id": 0,
+      "name": "publicAPI",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        33,
+        35
+      ],
+      "is_exported": true,
+      "is_used": false
+    },
+    "13": {
+      "id": 0,
+      "name": "oldDeprecatedFunction",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        4,
+        7
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "11": {
+      "id": 0,
+      "name": "unusedExport",
+      "node_type": "Function",
+      "file_path": "test_project\\sample.ts",
+      "line_range": [
+        19,
+        21
+      ],
+      "is_exported": true,
+      "is_used": false
+    },
+    "14": {
+      "id": 0,
+      "name": "internalHelper",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        29,
+        31
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "16": {
+      "id": 0,
+      "name": "experimentalAI",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        22,
+        26
+      ],
+      "is_exported": false,
+      "is_used": false
+    },
+    "18": {
+      "id": 0,
+      "name": "activeFunction",
+      "node_type": "Function",
+      "file_path": "test_project\\test_cases.ts",
+      "line_range": [
+        17,
+        19
+      ],
+      "is_exported": true,
+      "is_used": false
+    }
+  },
+  "edges": [
+    {
+      "from": 2,
+      "to": 0,
+      "edge_type": "Calls"
+    },
+    {
+      "from": 10,
+      "to": 6,
+      "edge_type": "Calls"
+    }
+  ],
+  "next_id": 19
+}

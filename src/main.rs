@@ -49,6 +49,11 @@ enum Commands {
         /// Use LLM for advanced analysis
         #[arg(long)]
         llm: bool,
+
+        /// Use database instead of scanning (requires init first)
+        #[cfg(feature = "db")]
+        #[arg(long)]
+        use_db: bool,
     },
 
     /// Clean dead code (interactive or automatic)
@@ -195,6 +200,11 @@ enum Commands {
         /// Export format (graphml, dot, json)
         #[arg(short, long, default_value = "graphml")]
         format: String,
+
+        /// Use database instead of scanning (requires init first)
+        #[cfg(feature = "db")]
+        #[arg(long)]
+        use_db: bool,
     },
 
     /// Visualize dependency graph in 3D (web server)
@@ -211,6 +221,11 @@ enum Commands {
         /// Open browser automatically
         #[arg(long)]
         open: bool,
+
+        /// Use database instead of scanning (requires init first)
+        #[cfg(feature = "db")]
+        #[arg(long)]
+        use_db: bool,
     },
 
     /// Initialize project database
@@ -262,15 +277,63 @@ fn main() -> Result<()> {
             directory,
             output,
             llm,
+            #[cfg(feature = "db")]
+            use_db,
         } => {
+            #[cfg(feature = "db")]
+            let use_db = use_db;
+            #[cfg(not(feature = "db"))]
+            let use_db = false;
+
             println!("🔍 Scanning directory: {}", directory.display());
             if llm {
                 println!("🤖 LLM analysis mode enabled");
             }
+            if use_db {
+                println!("💾 Using database");
+            }
             println!();
 
-            let mut scanner = Scanner::new()?;
-            let graph = scanner.scan_directory(&directory)?;
+            let graph = if use_db {
+                #[cfg(feature = "db")]
+                {
+                    // DBから読み込み
+                    let project_name = directory
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("project");
+                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+
+                    if !db_path.exists() {
+                        eprintln!("❌ データベースが見つかりません: {}", db_path.display());
+                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        return Ok(());
+                    }
+
+                    println!("📂 データベースから読み込み中...");
+                    let runtime = tokio::runtime::Runtime::new()?;
+                    let db = runtime.block_on(async {
+                        database::Database::open(&db_path).await
+                    })?;
+
+                    let project = runtime.block_on(async {
+                        db.get_or_create_project(&directory, project_name).await
+                    })?;
+
+                    // DBからグラフを再構築
+                    runtime.block_on(async {
+                        load_graph_from_db(&db, project.id).await
+                    })?
+                }
+                #[cfg(not(feature = "db"))]
+                {
+                    unreachable!()
+                }
+            } else {
+                // 通常のスキャン
+                let mut scanner = Scanner::new()?;
+                scanner.scan_directory(&directory)?
+            };
 
             let total_files = walkdir::WalkDir::new(&directory)
                 .into_iter()
@@ -890,19 +953,69 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Commands::Export { directory, output, format } => {
+        Commands::Export { 
+            directory, 
+            output, 
+            format,
+            #[cfg(feature = "db")]
+            use_db,
+        } => {
+            #[cfg(feature = "db")]
+            let use_db = use_db;
+            #[cfg(not(feature = "db"))]
+            let use_db = false;
+
             println!("📊 グラフをエクスポート中: {}", directory.display());
             println!("📁 出力先: {}", output.display());
-            println!("📋 形式: {}\n", format);
+            println!("📋 形式: {}", format);
+            if use_db {
+                println!("💾 Using database");
+            }
+            println!();
 
             if !directory.exists() {
                 eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
                 return Ok(());
             }
 
-            // Scan directory
-            let mut scanner = Scanner::new()?;
-            let graph = scanner.scan_directory(&directory)?;
+            // Scan directory or load from DB
+            let graph = if use_db {
+                #[cfg(feature = "db")]
+                {
+                    let project_name = directory
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("project");
+                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+
+                    if !db_path.exists() {
+                        eprintln!("❌ データベースが見つかりません: {}", db_path.display());
+                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        return Ok(());
+                    }
+
+                    println!("📂 データベースから読み込み中...");
+                    let runtime = tokio::runtime::Runtime::new()?;
+                    let db = runtime.block_on(async {
+                        database::Database::open(&db_path).await
+                    })?;
+
+                    let project = runtime.block_on(async {
+                        db.get_or_create_project(&directory, project_name).await
+                    })?;
+
+                    runtime.block_on(async {
+                        load_graph_from_db(&db, project.id).await
+                    })?
+                }
+                #[cfg(not(feature = "db"))]
+                {
+                    unreachable!()
+                }
+            } else {
+                let mut scanner = Scanner::new()?;
+                scanner.scan_directory(&directory)?
+            };
 
             println!("📊 グラフ統計:");
             println!("  ノード数: {}", graph.nodes.len());
@@ -944,8 +1057,18 @@ fn main() -> Result<()> {
             directory,
             port,
             open,
+            #[cfg(feature = "db")]
+            use_db,
         } => {
+            #[cfg(feature = "db")]
+            let use_db = use_db;
+            #[cfg(not(feature = "db"))]
+            let use_db = false;
+
             println!("📊 依存関係グラフを可視化中: {}", directory.display());
+            if use_db {
+                println!("💾 Using database");
+            }
             println!();
 
             if !directory.exists() {
@@ -953,9 +1076,44 @@ fn main() -> Result<()> {
                 return Ok(());
             }
 
-            // Scan directory
-            let mut scanner = Scanner::new()?;
-            let graph = scanner.scan_directory(&directory)?;
+            // Scan directory or load from DB
+            let graph = if use_db {
+                #[cfg(feature = "db")]
+                {
+                    let project_name = directory
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("project");
+                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+
+                    if !db_path.exists() {
+                        eprintln!("❌ データベースが見つかりません: {}", db_path.display());
+                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        return Ok(());
+                    }
+
+                    println!("📂 データベースから読み込み中...");
+                    let runtime = tokio::runtime::Runtime::new()?;
+                    let db = runtime.block_on(async {
+                        database::Database::open(&db_path).await
+                    })?;
+
+                    let project = runtime.block_on(async {
+                        db.get_or_create_project(&directory, project_name).await
+                    })?;
+
+                    runtime.block_on(async {
+                        load_graph_from_db(&db, project.id).await
+                    })?
+                }
+                #[cfg(not(feature = "db"))]
+                {
+                    unreachable!()
+                }
+            } else {
+                let mut scanner = Scanner::new()?;
+                scanner.scan_directory(&directory)?
+            };
 
             println!("📊 グラフ統計:");
             println!("  ノード数: {}", graph.nodes.len());
@@ -1328,6 +1486,84 @@ fn main() -> Result<()> {
             Ok(())
         }
     }
+}
+
+#[cfg(feature = "db")]
+async fn load_graph_from_db(
+    db: &database::Database,
+    project_id: i64,
+) -> Result<CodeGraph> {
+    use std::collections::HashMap;
+
+    // ファイル一覧を取得
+    let files: Vec<(i64, String)> = sqlx::query_as("SELECT id, path FROM files WHERE project_id = ?")
+        .bind(project_id)
+        .fetch_all(db.pool())
+        .await?;
+
+    let mut graph = CodeGraph::new();
+    let mut db_id_to_node_id: HashMap<i64, usize> = HashMap::new();
+
+    // 各ファイルの関数を読み込み
+    for (file_id, file_path) in files {
+        let functions: Vec<(i64, String, i64, i64, bool, bool)> = sqlx::query_as(
+            "SELECT id, name, line_start, line_end, is_exported, is_used FROM functions WHERE file_id = ?"
+        )
+        .bind(file_id)
+        .fetch_all(db.pool())
+        .await?;
+
+        for (func_id, name, line_start, line_end, is_exported, is_used) in functions {
+            let node = graph::CodeNode {
+                id: 0, // Will be set by add_node
+                name,
+                node_type: graph::NodeType::Function,
+                file_path: std::path::PathBuf::from(&file_path),
+                line_range: (line_start as usize, line_end as usize),
+                is_exported,
+                is_used,
+            };
+            let node_id = graph.add_node(node);
+            db_id_to_node_id.insert(func_id, node_id);
+        }
+    }
+
+    // 依存関係を読み込み
+    let dependencies: Vec<(i64, i64, String)> = sqlx::query_as(
+        r#"
+        SELECT from_function_id, to_function_id, edge_type
+        FROM dependencies d
+        JOIN functions f1 ON d.from_function_id = f1.id
+        JOIN functions f2 ON d.to_function_id = f2.id
+        JOIN files fi ON f1.file_id = fi.id
+        WHERE fi.project_id = ?
+        "#
+    )
+    .bind(project_id)
+    .fetch_all(db.pool())
+    .await?;
+
+    for (from_id, to_id, edge_type_str) in dependencies {
+        if let (Some(&from_node_id), Some(&to_node_id)) = (
+            db_id_to_node_id.get(&from_id),
+            db_id_to_node_id.get(&to_id),
+        ) {
+            let edge_type = match edge_type_str.as_str() {
+                "Calls" => graph::EdgeType::Calls,
+                "References" => graph::EdgeType::References,
+                "Instantiates" => graph::EdgeType::Instantiates,
+                _ => graph::EdgeType::Calls,
+            };
+
+            graph.add_edge(graph::DependencyEdge {
+                from: from_node_id,
+                to: to_node_id,
+                edge_type,
+            });
+        }
+    }
+
+    Ok(graph)
 }
 
 #[cfg(feature = "db")]

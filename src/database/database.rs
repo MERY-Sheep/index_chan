@@ -14,6 +14,11 @@ pub struct Database {
 }
 
 impl Database {
+    /// プールへの参照を取得
+    pub fn pool(&self) -> &SqlitePool {
+        &self.pool
+    }
+
     /// データベースを開く（存在しない場合は作成）
     pub async fn open(db_path: &Path) -> Result<Self> {
         // 親ディレクトリを作成
