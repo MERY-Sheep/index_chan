@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
 
 pub type NodeId = usize;
 
@@ -52,18 +52,18 @@ impl CodeGraph {
             next_id: 0,
         }
     }
-    
+
     pub fn add_node(&mut self, node: CodeNode) -> NodeId {
         let id = self.next_id;
         self.next_id += 1;
         self.nodes.insert(id, node);
         id
     }
-    
+
     pub fn add_edge(&mut self, edge: DependencyEdge) {
         self.edges.push(edge);
     }
-    
+
     #[allow(dead_code)]
     pub fn get_node(&self, id: NodeId) -> Option<&CodeNode> {
         self.nodes.get(&id)

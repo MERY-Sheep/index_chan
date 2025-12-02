@@ -1,10 +1,13 @@
 [package]
 name = "index-chan"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["index-chan contributors"]
 description = "Dead code detection CLI for TypeScript projects"
 license = "MIT"
+repository = "https://github.com/YOUR_USERNAME/index-chan"
+keywords = ["typescript", "dead-code", "cli", "ast", "llm"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 tree-sitter = "0.20"

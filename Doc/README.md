@@ -194,4 +194,4 @@ Doc/
 
 ## ライセンス
 
-MIT（予定）
+MIT License

@@ -104,7 +104,7 @@ impl Scanner {
         for call in calls {
             // Find the caller node (if inside a function)
             let caller_id = self.find_node_at_line(graph, path, call.caller_line);
-            
+
             // Find the callee node by name
             if let Some(callee_id) = self.find_node_by_name(graph, &call.callee_name) {
                 if let Some(caller_id) = caller_id {
@@ -131,10 +131,7 @@ impl Scanner {
 
     fn find_node_at_line(&self, graph: &CodeGraph, path: &Path, line: usize) -> Option<usize> {
         graph.nodes.iter().find_map(|(id, node)| {
-            if node.file_path == path
-                && line >= node.line_range.0
-                && line <= node.line_range.1
-            {
+            if node.file_path == path && line >= node.line_range.0 && line <= node.line_range.1 {
                 Some(*id)
             } else {
                 None

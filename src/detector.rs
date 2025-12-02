@@ -1,5 +1,5 @@
 use crate::graph::{CodeGraph, CodeNode};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeadCode {
@@ -17,24 +17,24 @@ pub enum SafetyLevel {
 
 pub fn detect_dead_code(graph: &CodeGraph) -> Vec<DeadCode> {
     let mut dead_code = Vec::new();
-    
+
     // Mark nodes as used based on edges
     let mut used_nodes = std::collections::HashSet::new();
     for edge in &graph.edges {
         used_nodes.insert(edge.to);
     }
-    
+
     for (id, node) in &graph.nodes {
         // Skip entry points
         if is_entry_point(node) {
             continue;
         }
-        
+
         // Skip exported functions (they might be used externally)
         if node.is_exported {
             continue;
         }
-        
+
         // Check if used
         if !used_nodes.contains(id) {
             let (safety, reason) = evaluate_safety(node, graph);
@@ -45,7 +45,7 @@ pub fn detect_dead_code(graph: &CodeGraph) -> Vec<DeadCode> {
             });
         }
     }
-    
+
     dead_code
 }
 
@@ -63,7 +63,7 @@ fn evaluate_safety(node: &CodeNode, _graph: &CodeGraph) -> (SafetyLevel, String)
             "Exported function - may be used externally".to_string(),
         );
     }
-    
+
     // Test files need review
     let path_str = node.file_path.to_string_lossy();
     if path_str.contains("test") || path_str.contains("spec") {
@@ -72,7 +72,7 @@ fn evaluate_safety(node: &CodeNode, _graph: &CodeGraph) -> (SafetyLevel, String)
             "Test file - may be used in tests".to_string(),
         );
     }
-    
+
     // Check for dynamic call risks
     if has_dynamic_call_risk(node) {
         return (
@@ -80,7 +80,7 @@ fn evaluate_safety(node: &CodeNode, _graph: &CodeGraph) -> (SafetyLevel, String)
             "Possible dynamic call pattern".to_string(),
         );
     }
-    
+
     (
         SafetyLevel::DefinitelySafe,
         "Not exported, no references found".to_string(),

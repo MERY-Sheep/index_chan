@@ -7,6 +7,7 @@
 # IDE settings
 .kiro/
 .vscode/
+.idea/
 
 # Model files (downloaded at runtime)
 models/
@@ -18,5 +19,8 @@ src_analysis.json
 test_project_report.json
 *_report.json
 
-# Development documentation (optional)
+# Development documentation (internal, Japanese)
 Doc/
+
+# Japanese versions of public docs (for internal review only)
+docs/*.ja.md

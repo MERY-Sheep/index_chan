@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
-use candle_core::{Device, Tensor, IndexOp};
-use candle_transformers::models::qwen2::{Config as Qwen2Config, ModelForCausalLM as Qwen2Model};
+use candle_core::{Device, IndexOp, Tensor};
 use candle_nn::VarBuilder;
+use candle_transformers::models::qwen2::{Config as Qwen2Config, ModelForCausalLM as Qwen2Model};
 use hf_hub::{api::sync::Api, Repo, RepoType};
 use tokenizers::Tokenizer;
 
@@ -18,9 +18,9 @@ pub struct LLMModel {
 impl LLMModel {
     pub fn new(config: LLMConfig) -> Result<Self> {
         println!("📥 モデルをロード中: {}", config.model_name);
-        
+
         let device = Device::Cpu;
-        
+
         // Check if local model directory exists
         let local_model_dir = std::path::PathBuf::from("models");
         let tokenizer_path = if local_model_dir.join("tokenizer.json").exists() {
@@ -28,12 +28,12 @@ impl LLMModel {
         } else {
             local_model_dir.join("tokenizer_config.json")
         };
-        
-        let use_local = local_model_dir.exists() 
+
+        let use_local = local_model_dir.exists()
             && local_model_dir.join("config.json").exists()
             && tokenizer_path.exists()
             && local_model_dir.join("model.safetensors").exists();
-        
+
         let (config_file, tokenizer_file, model_file) = if use_local {
             println!("  ローカルモデルを使用: ./models/");
             (
@@ -43,46 +43,45 @@ impl LLMModel {
             )
         } else {
             println!("  HuggingFace Hubからダウンロード中...");
-            
+
             // Download model from HuggingFace Hub using model() method
             let api = Api::new()?;
             let model_repo = api.model(config.model_name.clone());
-            
+
             println!("    - config.json");
-            let config_file = model_repo.get("config.json")
+            let config_file = model_repo
+                .get("config.json")
                 .context("config.jsonのダウンロードに失敗しました")?;
-            
+
             println!("    - tokenizer.json");
-            let tokenizer_file = model_repo.get("tokenizer.json")
+            let tokenizer_file = model_repo
+                .get("tokenizer.json")
                 .context("tokenizer.jsonのダウンロードに失敗しました")?;
-            
+
             println!("    - model.safetensors");
-            let model_file = model_repo.get("model.safetensors")
+            let model_file = model_repo
+                .get("model.safetensors")
                 .context("model.safetensorsのダウンロードに失敗しました")?;
-            
+
             (config_file, tokenizer_file, model_file)
         };
-        
+
         println!("  トークナイザーをロード中...");
         let tokenizer = Tokenizer::from_file(tokenizer_file)
             .map_err(|e| anyhow::anyhow!("トークナイザーのロードに失敗: {}", e))?;
-        
+
         println!("  モデル設定をロード中...");
-        let model_config: Qwen2Config = serde_json::from_reader(
-            std::fs::File::open(config_file)?
-        )?;
-        
+        let model_config: Qwen2Config = serde_json::from_reader(std::fs::File::open(config_file)?)?;
+
         println!("  モデルの重みをロード中...");
         // Use BF16 for better compatibility with Qwen models
         let dtype = candle_core::DType::F32;
-        let vb = unsafe {
-            VarBuilder::from_mmaped_safetensors(&[model_file], dtype, &device)?
-        };
-        
+        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[model_file], dtype, &device)? };
+
         let model = Qwen2Model::new(&model_config, vb)?;
-        
+
         println!("✅ モデルのロード完了");
-        
+
         Ok(Self {
             model,
             tokenizer,
@@ -90,28 +89,29 @@ impl LLMModel {
             config,
         })
     }
-    
+
     pub fn generate(&mut self, prompt: &str) -> Result<String> {
         // Format prompt for Qwen2.5-Coder-Instruct
         let formatted_prompt = format!(
             "<|im_start|>system\nYou are a helpful code analysis assistant.<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
             prompt
         );
-        
+
         println!("  フォーマット済みプロンプト:\n{}", formatted_prompt);
-        
+
         // Tokenize input
-        let encoding = self.tokenizer
+        let encoding = self
+            .tokenizer
             .encode(formatted_prompt.as_str(), true)
             .map_err(|e| anyhow::anyhow!("トークン化に失敗: {}", e))?;
-        
+
         let tokens = encoding.get_ids();
         println!("  入力トークン数: {}", tokens.len());
-        
+
         // Generate tokens
         let mut generated_tokens = tokens.to_vec();
         let max_new_tokens = self.config.max_tokens.min(50); // Limit for testing
-        
+
         for step in 0..max_new_tokens {
             // For first step, use all tokens; for subsequent steps, use only the last token
             let input_tokens = if step == 0 {
@@ -119,45 +119,52 @@ impl LLMModel {
             } else {
                 &generated_tokens[generated_tokens.len() - 1..]
             };
-            
-            let input = Tensor::new(input_tokens, &self.device)?
-                .unsqueeze(0)?;
-            
-            let start_pos = if step == 0 { 0 } else { generated_tokens.len() - 1 };
-            
+
+            let input = Tensor::new(input_tokens, &self.device)?.unsqueeze(0)?;
+
+            let start_pos = if step == 0 {
+                0
+            } else {
+                generated_tokens.len() - 1
+            };
+
             // Forward pass (ModelForCausalLM already returns logits for the last position)
             let logits = self.model.forward(&input, start_pos)?;
             let last_logits = logits.squeeze(0)?.squeeze(0)?; // shape: [vocab_size]
-            
+
             // Sample next token (greedy for now)
             let next_token = last_logits.argmax(0)?.to_scalar::<u32>()?;
-            
+
             // Check for EOS token
             let eos_tokens = vec![
                 self.tokenizer.token_to_id("<|endoftext|>"),
                 self.tokenizer.token_to_id("<|im_end|>"),
                 self.tokenizer.token_to_id("</s>"),
             ];
-            
+
             if eos_tokens.iter().any(|&t| t == Some(next_token)) {
                 println!("  EOS検出 (ステップ {})", step + 1);
                 break;
             }
-            
+
             generated_tokens.push(next_token);
-            
+
             if (step + 1) % 10 == 0 {
                 println!("  生成中... {} トークン", step + 1);
             }
         }
-        
-        println!("  生成完了: {} トークン", generated_tokens.len() - tokens.len());
-        
+
+        println!(
+            "  生成完了: {} トークン",
+            generated_tokens.len() - tokens.len()
+        );
+
         // Decode output
-        let output = self.tokenizer
+        let output = self
+            .tokenizer
             .decode(&generated_tokens[tokens.len()..], true)
             .map_err(|e| anyhow::anyhow!("デコードに失敗: {}", e))?;
-        
+
         Ok(output)
     }
 }

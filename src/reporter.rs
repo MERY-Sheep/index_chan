@@ -1,6 +1,6 @@
 use crate::detector::{DeadCode, SafetyLevel};
 use colored::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScanReport {
@@ -33,7 +33,7 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
         .iter()
         .map(|dc| dc.node.line_range.1 - dc.node.line_range.0 + 1)
         .sum();
-    
+
     println!("\n{}", "🔍 デッドコード検出結果".bold());
     println!("{}", "━".repeat(50));
     println!();
@@ -41,25 +41,29 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
     println!("📊 総関数数: {}", total_functions);
     println!("🗑️  未使用関数: {}個 ({}行)", dead_count, dead_lines);
     println!();
-    
+
     // Group by safety level
     let definitely_safe: Vec<_> = dead_code
         .iter()
         .filter(|dc| matches!(dc.safety_level, SafetyLevel::DefinitelySafe))
         .collect();
-    
+
     let probably_safe: Vec<_> = dead_code
         .iter()
         .filter(|dc| matches!(dc.safety_level, SafetyLevel::ProbablySafe))
         .collect();
-    
+
     let needs_review: Vec<_> = dead_code
         .iter()
         .filter(|dc| matches!(dc.safety_level, SafetyLevel::NeedsReview))
         .collect();
-    
+
     if !definitely_safe.is_empty() {
-        println!("{} {}個", "[確実に安全]".green().bold(), definitely_safe.len());
+        println!(
+            "{} {}個",
+            "[確実に安全]".green().bold(),
+            definitely_safe.len()
+        );
         for dc in definitely_safe.iter().take(5) {
             print_dead_code_entry(dc);
         }
@@ -68,9 +72,13 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
         }
         println!();
     }
-    
+
     if !probably_safe.is_empty() {
-        println!("{} {}個", "[おそらく安全]".yellow().bold(), probably_safe.len());
+        println!(
+            "{} {}個",
+            "[おそらく安全]".yellow().bold(),
+            probably_safe.len()
+        );
         for dc in probably_safe.iter().take(5) {
             print_dead_code_entry(dc);
         }
@@ -79,7 +87,7 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
         }
         println!();
     }
-    
+
     if !needs_review.is_empty() {
         println!("{} {}個", "[要確認]".red().bold(), needs_review.len());
         for dc in needs_review.iter().take(5) {
@@ -90,14 +98,17 @@ pub fn print_report(dead_code: &[DeadCode], total_files: usize, total_functions:
         }
         println!();
     }
-    
+
     let reduction_percent = if total_functions > 0 {
         (dead_count as f64 / total_functions as f64) * 100.0
     } else {
         0.0
     };
-    
-    println!("💾 削減可能な行数: {}行 (全体の {:.1}%)", dead_lines, reduction_percent);
+
+    println!(
+        "💾 削減可能な行数: {}行 (全体の {:.1}%)",
+        dead_lines, reduction_percent
+    );
     println!("💰 削減可能なトークン数: 約 {}トークン", dead_lines * 20);
 }
 
@@ -117,13 +128,13 @@ pub fn generate_json_report(
         .iter()
         .map(|dc| dc.node.line_range.1 - dc.node.line_range.0 + 1)
         .sum();
-    
+
     let reduction_percent = if total_functions > 0 {
         (dead_count as f64 / total_functions as f64) * 100.0
     } else {
         0.0
     };
-    
+
     let summary = Summary {
         total_files,
         total_functions,
@@ -131,7 +142,7 @@ pub fn generate_json_report(
         dead_code_lines: dead_lines,
         reduction_percent,
     };
-    
+
     let dead_code_entries: Vec<DeadCodeEntry> = dead_code
         .iter()
         .map(|dc| DeadCodeEntry {
@@ -143,7 +154,7 @@ pub fn generate_json_report(
             reason: dc.reason.clone(),
         })
         .collect();
-    
+
     ScanReport {
         summary,
         dead_code: dead_code_entries,

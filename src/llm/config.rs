@@ -27,7 +27,7 @@ impl LLMConfig {
         let home = dirs::home_dir().expect("Failed to get home directory");
         home.join(".cache").join("index-chan").join("models")
     }
-    
+
     pub fn get_model_path(&self) -> PathBuf {
         if let Some(path) = &self.model_path {
             path.clone()

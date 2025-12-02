@@ -55,7 +55,10 @@ impl Cleaner {
         println!("\n削除候補:");
         println!("  ファイル: {}", dc.node.file_path.display());
         println!("  関数名: {}", dc.node.name);
-        println!("  行範囲: {}-{}", dc.node.line_range.0, dc.node.line_range.1);
+        println!(
+            "  行範囲: {}-{}",
+            dc.node.line_range.0, dc.node.line_range.1
+        );
         println!("  安全性: {:?}", dc.safety_level);
         println!("  理由: {}", dc.reason);
 
@@ -80,8 +83,10 @@ impl Cleaner {
         }
 
         // ファイルを読み込み
-        let content = fs::read_to_string(&dc.node.file_path)
-            .context(format!("Failed to read file: {}", dc.node.file_path.display()))?;
+        let content = fs::read_to_string(&dc.node.file_path).context(format!(
+            "Failed to read file: {}",
+            dc.node.file_path.display()
+        ))?;
 
         let lines: Vec<&str> = content.lines().collect();
 
@@ -107,8 +112,10 @@ impl Cleaner {
         let new_content = new_lines.join("\n");
 
         // ファイルに書き込み
-        fs::write(&dc.node.file_path, new_content)
-            .context(format!("Failed to write file: {}", dc.node.file_path.display()))?;
+        fs::write(&dc.node.file_path, new_content).context(format!(
+            "Failed to write file: {}",
+            dc.node.file_path.display()
+        ))?;
 
         println!(
             "  ✅ 削除完了: {}:{}-{}",
