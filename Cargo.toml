@@ -12,6 +12,7 @@ categories = ["command-line-utilities", "development-tools"]
 [features]
 default = []
 web = ["axum", "tower", "tower-http", "tokio"]
+db = ["sqlx", "tokio", "notify", "notify-debouncer-full"]
 
 [dependencies]
 tree-sitter = "0.25"
@@ -38,3 +39,10 @@ axum = { version = "0.7", optional = true }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["fs", "cors"], optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
+
+# Database (Phase 4)
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "sqlite", "macros"], optional = true, default-features = false }
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+notify = { version = "6.1", optional = true }
+notify-debouncer-full = { version = "0.3", optional = true }

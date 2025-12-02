@@ -148,6 +148,71 @@ cargo run --features web --release -- visualize <directory> --port 8080 --open
 
 **ブラウザで開く:** http://localhost:8080
 
+### データベース層（Phase 4 ✅）
+
+```bash
+# DB機能を有効にしてビルド
+cargo build --features db --release
+
+# プロジェクト初期化
+cargo run --features db --release -- init <directory>
+
+# 統計表示
+cargo run --features db --release -- stats <directory>
+
+# ファイル監視（リアルタイム更新）
+cargo run --features db --release -- watch <directory>
+```
+
+**機能:**
+- SQLiteによる永続化
+- ファイルハッシュベースの変更検知
+- リアルタイムファイル監視
+- 自動データベース更新
+- プロジェクト統計
+
+**使用例:**
+```bash
+# 1. プロジェクト初期化
+$ cargo run --features db --release -- init test_project
+
+🔧 プロジェクトを初期化中: test_project
+📊 プロジェクト名: test_project
+💾 データベース: test_project\.index-chan\test_project.db
+
+✅ セットアップ完了！
+
+📊 プロジェクト統計:
+  ファイル数: 2
+  関数数: 13
+  依存関係: 1
+  デッドコード: 13 個 (100.0%)
+
+# 2. ファイル監視開始
+$ cargo run --features db --release -- watch test_project
+
+👀 ファイル監視を開始: test_project
+✅ 監視開始（Ctrl+Cで終了）
+
+[23:38:20] 🔄 変更: sample.ts
+   ✅ データベースを更新
+
+[23:38:34] 📄 追加: new_file.ts
+   ✅ データベースを更新
+
+# 3. 統計確認
+$ cargo run --features db --release -- stats test_project
+
+📊 プロジェクト統計: test_project
+📊 統計:
+  ファイル数: 3
+  関数数: 15
+  依存関係: 2
+🗑️  デッドコード:
+  未使用関数: 15 個
+  割合: 100.0%
+```
+
 ## LLMモード（Phase 1.5）
 
 ### 概要
@@ -362,7 +427,7 @@ index-chan test-embedding --compare
 - 関連メッセージ検索
 - トークン削減（39.5〜60%達成）
 
-**Phase 3: 3D依存関係グラフ可視化** 🚧 進行中
+**Phase 3: 3D依存関係グラフ可視化** ✅ 完了
 - Phase 3.1: グラフエクスポート ✅ 完了
   - GraphML/DOT/JSON形式対応
   - Gephi、Graphviz等で可視化可能
@@ -370,10 +435,18 @@ index-chan test-embedding --compare
   - Three.js + force-graph-3dによる3D表示
   - インタラクティブな操作
   - リアルタイム統計表示
-- Phase 3.3: Tauriデスクトップアプリ（計画中）
-  - スタンドアロンGUIアプリ
-  - リアルタイム更新
-  - ファイルウォッチャー
+
+**Phase 4: データベース層 + 自動追跡** 🚧 進行中
+- データベース層の基礎 ✅ 完了
+  - SQLiteによる状態管理
+  - ファイルハッシュベースの変更検知
+  - 依存関係の永続化
+- initコマンド（計画中）
+  - プロジェクト初期化
+  - 自動言語検出
+- ファイルウォッチャー（計画中）
+  - リアルタイム変更追跡
+  - 差分更新
 
 詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
 

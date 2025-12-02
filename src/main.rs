@@ -7,9 +7,13 @@ use detector::detect_dead_code;
 use reporter::{generate_json_report, print_report};
 use scanner::Scanner;
 
+#[cfg(feature = "db")]
+use graph::CodeGraph;
+
 mod annotator;
 mod cleaner;
 mod conversation;
+mod database;
 mod detector;
 mod exporter;
 mod graph;
@@ -207,6 +211,46 @@ enum Commands {
         /// Open browser automatically
         #[arg(long)]
         open: bool,
+    },
+
+    /// Initialize project database
+    #[cfg(feature = "db")]
+    Init {
+        /// Target directory to initialize
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Project name (optional, defaults to directory name)
+        #[arg(short, long)]
+        name: Option<String>,
+
+        /// Database path (optional, defaults to .index-chan/<project>.db)
+        #[arg(long)]
+        db_path: Option<PathBuf>,
+    },
+
+    /// Show project statistics
+    #[cfg(feature = "db")]
+    Stats {
+        /// Target directory
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Database path (optional, defaults to .index-chan/<project>.db)
+        #[arg(long)]
+        db_path: Option<PathBuf>,
+    },
+
+    /// Watch for file changes and update database
+    #[cfg(feature = "db")]
+    Watch {
+        /// Target directory to watch
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
+
+        /// Database path (optional, defaults to .index-chan/<project>.db)
+        #[arg(long)]
+        db_path: Option<PathBuf>,
     },
 }
 
@@ -942,5 +986,395 @@ fn main() -> Result<()> {
 
             Ok(())
         }
+        #[cfg(feature = "db")]
+        Commands::Init { directory, name, db_path } => {
+            println!("🔧 プロジェクトを初期化中: {}", directory.display());
+            println!();
+
+            if !directory.exists() {
+                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
+                return Ok(());
+            }
+
+            // プロジェクト名を決定
+            let project_name = name.unwrap_or_else(|| {
+                directory
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("project")
+                    .to_string()
+            });
+
+            // データベースパスを決定
+            let db_path = db_path.unwrap_or_else(|| {
+                directory.join(".index-chan").join(format!("{}.db", project_name))
+            });
+
+            println!("📊 プロジェクト名: {}", project_name);
+            println!("💾 データベース: {}", db_path.display());
+            println!();
+
+            // データベースを開く
+            println!("💾 データベースを作成中...");
+            let runtime = tokio::runtime::Runtime::new()?;
+            let db = runtime.block_on(async {
+                database::Database::open(&db_path).await
+            })?;
+            println!("✅ データベース作成完了");
+            println!();
+
+            // プロジェクトを作成
+            let project = runtime.block_on(async {
+                db.get_or_create_project(&directory, &project_name).await
+            })?;
+            println!("📂 プロジェクトID: {}", project.id);
+            println!();
+
+            // ディレクトリ全体をスキャン
+            println!("🔍 ディレクトリをスキャン中...");
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&directory)?;
+            
+            println!("✅ スキャン完了");
+            println!();
+
+            // 各ファイルをデータベースに保存
+            println!("💾 データベースに保存中...");
+            
+            // ファイルごとにグループ化
+            let mut files_map: std::collections::HashMap<PathBuf, Vec<usize>> = std::collections::HashMap::new();
+            for (node_id, node) in &graph.nodes {
+                files_map.entry(node.file_path.clone())
+                    .or_insert_with(Vec::new)
+                    .push(*node_id);
+            }
+
+            let mut processed_files = 0;
+            for (file_path, node_ids) in &files_map {
+                // ハッシュを計算
+                let hash = match database::Database::calculate_file_hash(file_path) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        eprintln!("⚠️  ハッシュ計算エラー ({}): {}", file_path.display(), e);
+                        continue;
+                    }
+                };
+
+                // 言語を判定
+                let language = if file_path.extension().and_then(|s| s.to_str()) == Some("rs") {
+                    "rust"
+                } else {
+                    "typescript"
+                };
+
+                // ファイルをデータベースに追加
+                let file = runtime.block_on(async {
+                    db.upsert_file(project.id, file_path, language, &hash).await
+                })?;
+
+                // このファイルのノードだけを含むサブグラフを作成
+                let mut file_graph = CodeGraph::new();
+                for node_id in node_ids {
+                    if let Some(node) = graph.nodes.get(node_id) {
+                        file_graph.add_node(node.clone());
+                    }
+                }
+                
+                // このファイルに関連するエッジを追加
+                for edge in &graph.edges {
+                    if node_ids.contains(&edge.from) || node_ids.contains(&edge.to) {
+                        file_graph.add_edge(edge.clone());
+                    }
+                }
+
+                // グラフをデータベースに保存
+                runtime.block_on(async {
+                    db.save_graph(file.id, &file_graph).await
+                })?;
+
+                processed_files += 1;
+                if processed_files % 10 == 0 {
+                    print!(".");
+                    use std::io::Write;
+                    std::io::stdout().flush()?;
+                }
+            }
+
+            println!("\n✅ 保存完了");
+            println!();
+
+            // 統計を表示
+            let stats = runtime.block_on(async {
+                db.get_project_stats(project.id).await
+            })?;
+
+            println!("📊 プロジェクト統計:");
+            println!("  ファイル数: {}", stats.file_count);
+            println!("  関数数: {}", stats.function_count);
+            println!("  依存関係: {}", stats.dependency_count);
+            println!("  デッドコード: {} 個 ({:.1}%)", 
+                stats.dead_code_count,
+                if stats.function_count > 0 {
+                    (stats.dead_code_count as f64 / stats.function_count as f64) * 100.0
+                } else {
+                    0.0
+                }
+            );
+            println!();
+
+            println!("✅ セットアップ完了！");
+            println!();
+            println!("💡 次のステップ:");
+            println!("  index-chan stats {}    # 統計を表示", directory.display());
+            println!("  index-chan scan {}     # デッドコードをスキャン", directory.display());
+
+            Ok(())
+        }
+        #[cfg(feature = "db")]
+        Commands::Stats { directory, db_path } => {
+            println!("📊 プロジェクト統計: {}", directory.display());
+            println!();
+
+            if !directory.exists() {
+                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
+                return Ok(());
+            }
+
+            // プロジェクト名を取得
+            let project_name = directory
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("project");
+
+            // データベースパスを決定
+            let db_path = db_path.unwrap_or_else(|| {
+                directory.join(".index-chan").join(format!("{}.db", project_name))
+            });
+
+            if !db_path.exists() {
+                eprintln!("❌ データベースが見つかりません: {}", db_path.display());
+                eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                return Ok(());
+            }
+
+            // データベースを開く
+            let runtime = tokio::runtime::Runtime::new()?;
+            let db = runtime.block_on(async {
+                database::Database::open(&db_path).await
+            })?;
+
+            // プロジェクトを取得
+            let project = runtime.block_on(async {
+                db.get_or_create_project(&directory, project_name).await
+            })?;
+
+            // 統計を取得
+            let stats = runtime.block_on(async {
+                db.get_project_stats(project.id).await
+            })?;
+
+            println!("📂 プロジェクト: {}", project.name);
+            println!("📅 作成日: {}", project.created_at.format("%Y-%m-%d %H:%M:%S"));
+            println!("📅 更新日: {}", project.updated_at.format("%Y-%m-%d %H:%M:%S"));
+            println!();
+
+            println!("📊 統計:");
+            println!("  ファイル数: {}", stats.file_count);
+            println!("  関数数: {}", stats.function_count);
+            println!("  依存関係: {}", stats.dependency_count);
+            println!();
+
+            println!("🗑️  デッドコード:");
+            println!("  未使用関数: {} 個", stats.dead_code_count);
+            if stats.function_count > 0 {
+                let percentage = (stats.dead_code_count as f64 / stats.function_count as f64) * 100.0;
+                println!("  割合: {:.1}%", percentage);
+            }
+
+            Ok(())
+        }
+        #[cfg(feature = "db")]
+        Commands::Watch { directory, db_path } => {
+            use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult};
+            use std::time::Duration;
+
+            println!("👀 ファイル監視を開始: {}", directory.display());
+            println!();
+
+            if !directory.exists() {
+                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
+                return Ok(());
+            }
+
+            // プロジェクト名を取得
+            let project_name = directory
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("project");
+
+            // データベースパスを決定
+            let db_path = db_path.unwrap_or_else(|| {
+                directory.join(".index-chan").join(format!("{}.db", project_name))
+            });
+
+            if !db_path.exists() {
+                eprintln!("❌ データベースが見つかりません: {}", db_path.display());
+                eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                return Ok(());
+            }
+
+            println!("📂 監視中: {}", directory.display());
+            println!("💾 データベース: {}", db_path.display());
+            println!();
+
+            // データベースを開く
+            let runtime = tokio::runtime::Runtime::new()?;
+            let db = runtime.block_on(async {
+                database::Database::open(&db_path).await
+            })?;
+
+            // プロジェクトを取得
+            let project = runtime.block_on(async {
+                db.get_or_create_project(&directory, project_name).await
+            })?;
+
+            // ファイルウォッチャーを作成
+            let (tx, rx) = std::sync::mpsc::channel();
+            
+            let mut debouncer = new_debouncer(
+                Duration::from_secs(2),
+                None,
+                move |result: DebounceEventResult| {
+                    tx.send(result).unwrap();
+                },
+            )?;
+
+            // 監視を開始
+            debouncer.watcher().watch(
+                &directory,
+                RecursiveMode::Recursive,
+            )?;
+
+            println!("✅ 監視開始（Ctrl+Cで終了）");
+            println!();
+
+            // イベントループ
+            let mut scanner = Scanner::new()?;
+            
+            for result in rx {
+                match result {
+                    Ok(events) => {
+                        for event in events {
+                            for path in &event.paths {
+                                // TypeScriptまたはRustファイルのみ処理
+                                let ext = path.extension().and_then(|s| s.to_str());
+                                if ext != Some("ts") && ext != Some("tsx") && ext != Some("rs") {
+                                    continue;
+                                }
+
+                                let relative_path = path.strip_prefix(&directory).unwrap_or(&path);
+                                let timestamp = chrono::Local::now().format("%H:%M:%S");
+
+                                match event.kind {
+                                    EventKind::Create(_) => {
+                                        println!("[{}] 📄 追加: {}", timestamp, relative_path.display());
+                                        
+                                        // ファイルを解析
+                                        if let Err(e) = runtime.block_on(async {
+                                            process_file_change(&db, &mut scanner, project.id, &path, "typescript").await
+                                        }) {
+                                            eprintln!("   ❌ エラー: {}", e);
+                                        } else {
+                                            println!("   ✅ データベースを更新");
+                                        }
+                                    }
+                                    EventKind::Modify(_) => {
+                                        println!("[{}] 🔄 変更: {}", timestamp, relative_path.display());
+                                        
+                                        // ファイルを再解析
+                                        if let Err(e) = runtime.block_on(async {
+                                            process_file_change(&db, &mut scanner, project.id, &path, "typescript").await
+                                        }) {
+                                            eprintln!("   ❌ エラー: {}", e);
+                                        } else {
+                                            println!("   ✅ データベースを更新");
+                                        }
+                                    }
+                                    EventKind::Remove(_) => {
+                                        println!("[{}] 🗑️  削除: {}", timestamp, relative_path.display());
+                                        
+                                        // データベースから削除
+                                        if let Err(e) = runtime.block_on(async {
+                                            db.delete_file(project.id, &path).await
+                                        }) {
+                                            eprintln!("   ❌ エラー: {}", e);
+                                        } else {
+                                            println!("   ✅ データベースから削除");
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                    Err(errors) => {
+                        for error in errors {
+                            eprintln!("⚠️  監視エラー: {:?}", error);
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
+}
+
+#[cfg(feature = "db")]
+async fn process_file_change(
+    db: &database::Database,
+    scanner: &mut Scanner,
+    project_id: i64,
+    file_path: &std::path::Path,
+    language: &str,
+) -> Result<()> {
+    use std::path::Path;
+    
+    // ハッシュを計算
+    let hash = database::Database::calculate_file_hash(file_path)?;
+    
+    // ファイルをデータベースに追加/更新
+    let file = db.upsert_file(project_id, file_path, language, &hash).await?;
+    
+    // 一時的なディレクトリを作成してスキャン
+    // （単一ファイルのスキャンは現在サポートされていないため、親ディレクトリをスキャン）
+    let parent_dir = file_path.parent().unwrap_or(Path::new("."));
+    let graph = scanner.scan_directory(parent_dir)?;
+    
+    // このファイルのノードだけを抽出
+    let mut file_graph = CodeGraph::new();
+    for (_node_id, node) in &graph.nodes {
+        if node.file_path == file_path {
+            file_graph.add_node(node.clone());
+        }
+    }
+    
+    // このファイルに関連するエッジを追加
+    for edge in &graph.edges {
+        let from_in_file = graph.nodes.get(&edge.from)
+            .map(|n| n.file_path == file_path)
+            .unwrap_or(false);
+        let to_in_file = graph.nodes.get(&edge.to)
+            .map(|n| n.file_path == file_path)
+            .unwrap_or(false);
+            
+        if from_in_file || to_in_file {
+            file_graph.add_edge(edge.clone());
+        }
+    }
+    
+    // グラフをデータベースに保存
+    db.save_graph(file.id, &file_graph).await?;
+    
+    Ok(())
 }
