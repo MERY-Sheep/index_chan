@@ -150,6 +150,7 @@ cargo run --features web --release -- visualize <directory> --port 8080 --open
 
 ### データベース層（Phase 4 ✅）
 
+**Phase 4.0: 基礎機能**
 ```bash
 # DB機能を有効にしてビルド
 cargo build --features db --release
@@ -164,22 +165,32 @@ cargo run --features db --release -- stats <directory>
 cargo run --features db --release -- watch <directory>
 ```
 
+**Phase 4.1: 既存コマンドのDB統合**
+```bash
+# DBから高速スキャン
+cargo run --features db --release -- scan <directory> --use-db
+
+# DBから高速エクスポート
+cargo run --features db --release -- export <directory> -o graph.json -f json --use-db
+
+# DBから高速可視化
+cargo run --features db,web --release -- visualize <directory> --use-db
+```
+
 **機能:**
 - SQLiteによる永続化
 - ファイルハッシュベースの変更検知
 - リアルタイムファイル監視
 - 自動データベース更新
 - プロジェクト統計
+- 既存コマンドのDB対応（再スキャン不要）
 
-**使用例:**
+**理想的なワークフロー:**
 ```bash
-# 1. プロジェクト初期化
+# 1. プロジェクト初期化（一度だけ）
 $ cargo run --features db --release -- init test_project
 
 🔧 プロジェクトを初期化中: test_project
-📊 プロジェクト名: test_project
-💾 データベース: test_project\.index-chan\test_project.db
-
 ✅ セットアップ完了！
 
 📊 プロジェクト統計:
@@ -188,7 +199,7 @@ $ cargo run --features db --release -- init test_project
   依存関係: 1
   デッドコード: 13 個 (100.0%)
 
-# 2. ファイル監視開始
+# 2. ファイル監視開始（バックグラウンド）
 $ cargo run --features db --release -- watch test_project
 
 👀 ファイル監視を開始: test_project
@@ -200,18 +211,33 @@ $ cargo run --features db --release -- watch test_project
 [23:38:34] 📄 追加: new_file.ts
    ✅ データベースを更新
 
-# 3. 統計確認
+# 3. 高速スキャン（DBから、再スキャン不要）
+$ cargo run --features db --release -- scan test_project --use-db
+
+💾 Using database
+📂 データベースから読み込み中...
+🗑️  Unused Functions: 11 (38 lines)
+
+# 4. 統計確認
 $ cargo run --features db --release -- stats test_project
 
 📊 プロジェクト統計: test_project
-📊 統計:
   ファイル数: 3
   関数数: 15
-  依存関係: 2
-🗑️  デッドコード:
-  未使用関数: 15 個
-  割合: 100.0%
+  デッドコード: 15 個 (100.0%)
+
+# 5. 高速エクスポート（DBから）
+$ cargo run --features db --release -- export test_project -o graph.json -f json --use-db
+
+💾 Using database
+✅ JSON形式でエクスポート完了
 ```
+
+**特徴:**
+- 一度initすれば、あとは自動で追跡
+- watchが変更を検知して自動更新
+- すべてのコマンドが--use-dbで高速化
+- 再スキャン不要
 
 ## LLMモード（Phase 1.5）
 
