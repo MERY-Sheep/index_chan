@@ -4,6 +4,10 @@
 *~
 .DS_Store
 
+# IDE settings
+.kiro/
+.vscode/
+
 # Model files (downloaded at runtime)
 models/
 *.safetensors
@@ -13,3 +17,6 @@ report.json
 src_analysis.json
 test_project_report.json
 *_report.json
+
+# Development documentation (optional)
+Doc/
