@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["index-chan contributors"]
 description = "Dead code detection CLI for TypeScript projects"
 license = "MIT"
-repository = "https://github.com/YOUR_USERNAME/index-chan"
+repository = "https://github.com/MERY-Sheep/index_chan"
 keywords = ["typescript", "dead-code", "cli", "ast", "llm"]
 categories = ["command-line-utilities", "development-tools"]
 
