@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
+use ignore::WalkBuilder;
 
 use crate::graph::{CodeGraph, CodeNode, DependencyEdge, EdgeType, NodeType};
 use crate::parser::{CodeParser, Language};
@@ -18,12 +18,19 @@ impl Scanner {
         let mut graph = CodeGraph::new();
         let mut file_count = 0;
 
-        // Collect all supported files (TypeScript and Rust)
-        let code_files: Vec<(PathBuf, Language)> = WalkDir::new(dir)
-            .into_iter()
+        // Collect all supported files (TypeScript and Rust) using ignore crate
+        let code_files: Vec<(PathBuf, Language)> = WalkBuilder::new(dir)
+            .add_custom_ignore_filename(".indexchanignore")
+            .git_ignore(true)      // .gitignoreも尊重
+            .git_global(true)      // グローバル.gitignoreも
+            .git_exclude(true)     // .git/info/excludeも
+            .build()
             .filter_map(|e| e.ok())
             .filter_map(|e| {
                 let path = e.path();
+                if !path.is_file() {
+                    return None;
+                }
                 let ext = path.extension()?.to_str()?;
                 let lang = Language::from_extension(ext)?;
                 Some((path.to_path_buf(), lang))

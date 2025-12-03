@@ -1,4 +1,5 @@
 use crate::detector::DeadCode;
+use crate::backup::{BackupManager, ChangeType};
 use anyhow::Result;
 use std::path::Path;
 
@@ -33,19 +34,50 @@ impl Annotator {
     }
 
     pub fn annotate(&self, dead_code: &[DeadCode]) -> Result<AnnotationResult> {
+        self.annotate_with_backup(dead_code, None)
+    }
+
+    pub fn annotate_with_backup(&self, dead_code: &[DeadCode], project_root: Option<&Path>) -> Result<AnnotationResult> {
         let mut annotated_count = 0;
         let mut skipped_count = 0;
+
+        // バックアップマネージャーとマニフェストを準備
+        let (backup_manager, backup_dir, mut manifest) = if !self.dry_run && project_root.is_some() {
+            let manager = BackupManager::new(project_root.unwrap());
+            let (dir, manifest) = manager.create_backup_dir("annotate")?;
+            (Some(manager), Some(dir), Some(manifest))
+        } else {
+            (None, None, None)
+        };
 
         for code in dead_code {
             // Only annotate code that should be kept
             if self.should_annotate(code) {
                 if !self.dry_run {
+                    // バックアップを作成
+                    if let (Some(ref manager), Some(ref backup_dir), Some(ref mut manifest)) = 
+                        (&backup_manager, &backup_dir, &mut manifest) {
+                        if code.node.file_path.exists() {
+                            let backup_path = manager.backup_file(&code.node.file_path, backup_dir)?;
+                            let relative_backup = backup_path.strip_prefix(backup_dir)
+                                .unwrap_or(&backup_path)
+                                .to_path_buf();
+                            manifest.add_change(ChangeType::Modified, code.node.file_path.clone(), Some(relative_backup));
+                        }
+                    }
+
                     self.add_annotation(code)?;
                 }
                 annotated_count += 1;
             } else {
                 skipped_count += 1;
             }
+        }
+
+        // マニフェストを保存
+        if let (Some(ref backup_dir), Some(manifest)) = (&backup_dir, manifest) {
+            manifest.save(backup_dir)?;
+            println!("\n📦 バックアップを作成しました: {}", backup_dir.display());
         }
 
         Ok(AnnotationResult {

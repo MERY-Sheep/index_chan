@@ -4,6 +4,10 @@
 *~
 .DS_Store
 
+# Tauri desktop app (frozen)
+src-tauri/
+desktop-ui/
+
 # IDE settings
 .kiro/
 .vscode/
@@ -26,6 +30,12 @@ graph.json
 graph.svg
 graph.png
 graph.pdf
+
+# index-chan generated files
+.index-chan/
+**/backups/
+test_*.json
+test_*.txt
 
 # Development documentation (internal, Japanese)
 Doc/

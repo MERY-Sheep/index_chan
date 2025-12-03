@@ -11,13 +11,17 @@ use scanner::Scanner;
 use graph::CodeGraph;
 
 mod annotator;
+mod backup;
 mod cleaner;
 mod conversation;
 mod database;
 mod detector;
+mod error_helper;
 mod exporter;
+mod filter;
 mod graph;
 mod llm;
+mod mcp;
 mod parser;
 mod reporter;
 mod scanner;
@@ -25,6 +29,9 @@ mod search;
 
 #[cfg(feature = "web")]
 mod web_server;
+
+#[cfg(feature = "web")]
+mod chat_server;
 
 #[derive(Parser)]
 #[command(name = "index-chan")]
@@ -90,30 +97,23 @@ enum Commands {
         dry_run: bool,
     },
 
-    /// Test LLM inference with a simple prompt
-    TestLlm {
-        /// Custom prompt to test (optional)
-        #[arg(short, long)]
-        prompt: Option<String>,
+    /// Undo the last operation (restore from backup)
+    Undo {
+        /// Project directory
+        #[arg(value_name = "DIRECTORY")]
+        directory: PathBuf,
 
-        /// List available files in the model repository
+        /// Specific backup to restore (timestamp format: YYYYMMDD_HHMMSS)
         #[arg(long)]
-        list_files: bool,
+        backup: Option<String>,
 
-        /// Test tokenizer only (no inference)
+        /// List available backups
         #[arg(long)]
-        tokenizer_only: bool,
-    },
+        list: bool,
 
-    /// Test embedding model
-    TestEmbedding {
-        /// Text to encode (optional)
-        #[arg(short, long)]
-        text: Option<String>,
-
-        /// Compare similarity between two texts
+        /// Force restore without confirmation
         #[arg(long)]
-        compare: bool,
+        force: bool,
     },
 
     /// Create search index for code
@@ -267,6 +267,59 @@ enum Commands {
         #[arg(long)]
         db_path: Option<PathBuf>,
     },
+
+    /// Visualize chat graph and prompts (web UI)
+    #[cfg(feature = "web")]
+    VisualizeChat {
+        /// Chat history JSON file
+        #[arg(value_name = "FILE")]
+        chat_file: PathBuf,
+
+        /// Prompt history JSON file (optional)
+        #[arg(short, long, value_name = "FILE")]
+        prompt_file: Option<PathBuf>,
+
+        /// Server port
+        #[arg(short = 'p', long, default_value = "8081")]
+        port: u16,
+
+        /// Open browser automatically
+        #[arg(long)]
+        open: bool,
+    },
+
+    /// Show prompt history
+    ShowPrompts {
+        /// Prompt history JSON file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+
+        /// Filter by node ID
+        #[arg(short, long)]
+        node_id: Option<String>,
+
+        /// Show statistics only
+        #[arg(long)]
+        stats: bool,
+    },
+
+    /// Chat with Index (interactive mode)
+    Chat {
+        /// Project directory for context
+        #[arg(value_name = "DIRECTORY")]
+        directory: Option<PathBuf>,
+
+        /// Single message (non-interactive)
+        #[arg(short, long)]
+        message: Option<String>,
+    },
+
+    /// Start MCP server (stdio mode)
+    McpServer {
+        /// Project directory (optional, can be set per-request)
+        #[arg(value_name = "DIRECTORY")]
+        directory: Option<PathBuf>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -345,39 +398,13 @@ fn main() -> Result<()> {
                 .count();
 
             let total_functions = graph.nodes.len();
-            let mut dead_code = detect_dead_code(&graph);
+            let dead_code = detect_dead_code(&graph);
 
             // LLM analysis if requested
             if llm {
-                println!("🤖 Analyzing with LLM...");
-                let llm_config = llm::LLMConfig::default();
-                let mut llm_analyzer = llm::LLMAnalyzer::new(llm_config, true)?;
-                let context_collector = llm::ContextCollector::new(&directory);
-
-                for code in &mut dead_code {
-                    let context = context_collector.collect_context(&code.node);
-                    match llm_analyzer.analyze(&code.node, &context) {
-                        Ok(analysis) => {
-                            // Update reason with LLM analysis
-                            code.reason = format!(
-                                "{} (confidence: {:.0}%)",
-                                analysis.reason,
-                                analysis.confidence * 100.0
-                            );
-
-                            // Update safety level based on LLM analysis
-                            if analysis.should_delete && analysis.confidence > 0.9 {
-                                code.safety_level = detector::SafetyLevel::DefinitelySafe;
-                            } else if !analysis.should_delete && analysis.confidence > 0.8 {
-                                code.safety_level = detector::SafetyLevel::NeedsReview;
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("⚠️  LLM analysis error ({}): {}", code.node.name, e);
-                        }
-                    }
-                }
-                println!("✅ LLM analysis completed\n");
+                eprintln!("⚠️  LLM機能は現在Gemini APIへの移行中です");
+                eprintln!("💡 async/awaitサポートを追加する必要があります");
+                // TODO: Gemini API対応のためにasync/awaitを実装
             }
 
             print_report(&dead_code, total_files, total_functions);
@@ -416,9 +443,9 @@ fn main() -> Result<()> {
 
             println!("\nDeletion candidates: {} items", dead_code.len());
 
-            // Execute cleaning
+            // Execute cleaning with backup
             let cleaner = Cleaner::new(dry_run, auto, safe_only);
-            let result = cleaner.clean(&dead_code)?;
+            let result = cleaner.clean_with_backup(&dead_code, Some(&directory))?;
 
             println!("\n📊 Results:");
             println!(
@@ -461,44 +488,16 @@ fn main() -> Result<()> {
             println!("📊 Detection results: {} unused functions", dead_code.len());
 
             // LLM analysis if requested
-            let mut annotator = annotator::Annotator::new(dry_run);
+            let annotator = annotator::Annotator::new(dry_run);
 
             if llm {
-                println!("🤖 Analyzing with LLM...");
-                let llm_config = llm::LLMConfig::default();
-                let mut llm_analyzer = llm::LLMAnalyzer::new(llm_config, true)?;
-                let context_collector = llm::ContextCollector::new(&directory);
-
-                let mut analyses = std::collections::HashMap::new();
-
-                for code in &dead_code {
-                    let context = context_collector.collect_context(&code.node);
-                    match llm_analyzer.analyze(&code.node, &context) {
-                        Ok(analysis) => {
-                            let key =
-                                format!("{}:{}", code.node.file_path.display(), code.node.name);
-                            analyses.insert(
-                                key,
-                                annotator::LLMAnalysisData {
-                                    should_delete: analysis.should_delete,
-                                    confidence: analysis.confidence,
-                                    reason: analysis.reason,
-                                    category: format!("{:?}", analysis.category),
-                                },
-                            );
-                        }
-                        Err(e) => {
-                            eprintln!("⚠️  LLM analysis error ({}): {}", code.node.name, e);
-                        }
-                    }
-                }
-
-                annotator = annotator.with_llm_analyses(analyses);
-                println!("✅ LLM analysis completed\n");
+                eprintln!("⚠️  LLM機能は現在Gemini APIへの移行中です");
+                eprintln!("💡 async/awaitサポートを追加する必要があります");
+                // TODO: Gemini API対応のためにasync/awaitを実装
             }
 
-            // アノテーション追加
-            let result = annotator.annotate(&dead_code)?;
+            // アノテーション追加（バックアップ付き）
+            let result = annotator.annotate_with_backup(&dead_code, Some(&directory))?;
 
             println!("\n📝 Results:");
             println!("  Annotations added: {} items", result.annotated_count);
@@ -512,121 +511,108 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Commands::TestLlm {
-            prompt,
-            list_files,
-            tokenizer_only,
-        } => {
-            println!("🤖 Starting LLM inference test\n");
 
-            let config = llm::LLMConfig::default();
+        Commands::Undo { directory, backup, list, force } => {
+            use backup::BackupManager;
 
-            if list_files {
-                println!("📂 Checking model repository files...");
-                println!("  Model: {}\n", config.model_name);
+            let backup_manager = BackupManager::new(&directory);
 
-                use hf_hub::api::sync::Api;
-                let api = Api::new()?;
-                let model_repo = api.model(config.model_name.clone());
-
-                println!("💡 Attempting to download the following files:");
-                let files = vec!["config.json", "tokenizer.json", "model.safetensors"];
-                for file in files {
-                    print!("  {} ... ", file);
-                    match model_repo.get(file) {
-                        Ok(path) => println!("✅ Exists ({})", path.display()),
-                        Err(e) => println!("❌ Error: {}", e),
-                    }
-                }
-                return Ok(());
-            }
-
-            let test_prompt = prompt.unwrap_or_else(|| {
-                "Is this function safe to delete?\n\nfunction unusedHelper() {\n  return 42;\n}"
-                    .to_string()
-            });
-
-            println!("📝 Prompt:");
-            println!("{}\n", test_prompt);
-
-            println!("🔧 Model configuration:");
-            println!("  Model name: {}", config.model_name);
-            println!("  Max tokens: {}", config.max_tokens);
-            println!("  Temperature: {}", config.temperature);
-            println!();
-
-            if tokenizer_only {
-                println!("🔧 Testing tokenizer only\n");
-
-                use tokenizers::Tokenizer;
-                let tokenizer_path = std::path::PathBuf::from("models/tokenizer.json");
-
-                if !tokenizer_path.exists() {
-                    eprintln!(
-                        "❌ tokenizer.json not found: {}",
-                        tokenizer_path.display()
-                    );
+            if list {
+                // List available backups
+                println!("📦 利用可能なバックアップ:\n");
+                let backups = backup_manager.list_backups()?;
+                
+                if backups.is_empty() {
+                    println!("バックアップが見つかりません");
                     return Ok(());
                 }
 
-                println!("📥 Loading tokenizer...");
-                let tokenizer = Tokenizer::from_file(tokenizer_path)
-                    .map_err(|e| anyhow::anyhow!("Failed to load tokenizer: {}", e))?;
-
-                println!("✅ Tokenizer loaded successfully\n");
-
-                println!("🔤 Encoding test:");
-                let encoding = tokenizer
-                    .encode(test_prompt.as_str(), true)
-                    .map_err(|e| anyhow::anyhow!("Failed to encode: {}", e))?;
-
-                let tokens = encoding.get_ids();
-                println!("  Token count: {}", tokens.len());
-                println!("  Token IDs: {:?}", &tokens[..tokens.len().min(10)]);
-
-                println!("\n🔤 Decoding test:");
-                let decoded = tokenizer
-                    .decode(tokens, true)
-                    .map_err(|e| anyhow::anyhow!("Failed to decode: {}", e))?;
-                println!("  Decoded result: {}", decoded);
-
-                println!("\n✅ Tokenizer is working correctly");
+                for backup_dir in backups {
+                    let timestamp = backup_dir
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown");
+                    
+                    if let Ok(manifest) = backup::BackupManifest::load(&backup_dir) {
+                        println!("📅 {}", timestamp);
+                        println!("   操作: {}", manifest.operation);
+                        println!("   変更ファイル数: {}", manifest.changes.len());
+                        println!("   日時: {}", manifest.timestamp.format("%Y-%m-%d %H:%M:%S"));
+                        println!();
+                    }
+                }
                 return Ok(());
             }
 
-            println!("📥 Loading model...");
-            println!("  (First run may take several minutes)");
-            println!("  💡 Check files: cargo run -- test-llm --list-files");
-            println!("  💡 Test tokenizer only: cargo run -- test-llm --tokenizer-only\n");
-
-            match llm::LLMModel::new(config) {
-                Ok(mut model) => {
-                    println!("\n🚀 Running inference...");
-
-                    match model.generate(&test_prompt) {
-                        Ok(response) => {
-                            println!("\n✅ Inference successful!\n");
-                            println!("📤 Response:");
-                            println!("{}", response);
-                        }
-                        Err(e) => {
-                            eprintln!("\n❌ Inference error: {}", e);
-                            return Err(e);
-                        }
+            // Determine which backup to restore
+            let backup_dir = if let Some(backup_name) = backup {
+                let path = directory.join(".index-chan").join("backups").join(&backup_name);
+                if !path.exists() {
+                    eprintln!("❌ バックアップが見つかりません: {}", backup_name);
+                    eprintln!("💡 利用可能なバックアップを確認: index-chan undo {} --list", directory.display());
+                    return Ok(());
+                }
+                path
+            } else {
+                match backup_manager.get_latest_backup()? {
+                    Some(path) => path,
+                    None => {
+                        eprintln!("❌ バックアップが見つかりません");
+                        eprintln!("💡 まだ変更操作を実行していないようです");
+                        return Ok(());
                     }
                 }
-                Err(e) => {
-                    eprintln!("\n❌ Model loading error: {}", e);
-                    eprintln!("\n💡 Troubleshooting:");
-                    eprintln!("  1. Check your internet connection");
-                    eprintln!("  2. Verify access to HuggingFace Hub");
-                    eprintln!("  3. Check disk space (approximately 2GB required)");
-                    return Err(e);
+            };
+
+            let backup_name = backup_dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown");
+
+            println!("🔄 バックアップから復元中: {}", backup_name);
+            println!();
+
+            // Load and display manifest
+            let manifest = backup::BackupManifest::load(&backup_dir)?;
+            println!("📋 操作: {}", manifest.operation);
+            println!("📅 日時: {}", manifest.timestamp.format("%Y-%m-%d %H:%M:%S"));
+            println!("📊 変更ファイル数: {}", manifest.changes.len());
+            println!();
+
+            // Confirm restoration
+            if !force {
+                use std::io::{self, Write};
+                print!("この操作を元に戻しますか？ (y/N): ");
+                io::stdout().flush()?;
+                
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
+                
+                if !input.trim().eq_ignore_ascii_case("y") {
+                    println!("キャンセルしました");
+                    return Ok(());
                 }
             }
 
+            // Perform restoration
+            let result = backup_manager.restore(&backup_dir)?;
+
+            println!("\n✅ 復元完了");
+            println!("   復元ファイル数: {}", result.restored_count);
+            
+            if !result.failed_files.is_empty() {
+                println!("\n⚠️  復元に失敗したファイル:");
+                for file in &result.failed_files {
+                    println!("   - {}", file.display());
+                }
+            }
+
+            println!("\n💡 バックアップは保持されています:");
+            println!("   {}", backup_dir.display());
+
             Ok(())
         }
+
         Commands::Index { directory, output } => {
             println!("📚 Creating index: {}", directory.display());
             println!();
@@ -742,7 +728,7 @@ fn main() -> Result<()> {
 
             // Analyze chat
             let analyzer = conversation::ConversationAnalyzer::new()?;
-            let mut graph = analyzer.analyze_file(&file)?;
+            let graph = analyzer.analyze_file(&file)?;
 
             println!("📊 Chat statistics:");
             let stats = graph.stats();
@@ -752,13 +738,11 @@ fn main() -> Result<()> {
             println!();
 
             // Detect topics
-            let mut topic_detector = conversation::TopicDetector::new();
-            topic_detector.detect_topics(&mut graph)?;
-
-            println!("📚 Topics detected: {}", graph.topics.len());
-            for topic in &graph.topics {
-                println!("  - {} ({} messages)", topic.name, topic.message_ids.len());
-            }
+            // TODO: async/await対応後に有効化
+            // let topic_detector = conversation::TopicDetector::new();
+            // topic_detector.detect_topics(&mut graph).await?;
+            
+            println!("⚠️  トピック検出機能は現在実装中です");
             println!();
 
             // Calculate token reduction
@@ -791,18 +775,20 @@ fn main() -> Result<()> {
 
             // Analyze chat
             let analyzer = conversation::ConversationAnalyzer::new()?;
-            let mut graph = analyzer.analyze_file(&file)?;
+            let graph = analyzer.analyze_file(&file)?;
 
             // Detect topics
-            let mut topic_detector = if llm {
-                println!("🤖 LLMでトピックを分析中...");
-                let llm_config = llm::LLMConfig::default();
-                conversation::TopicDetector::with_llm(llm_config)?
+            let _topic_detector = if llm {
+                eprintln!("⚠️  LLM機能は現在Gemini APIへの移行中です");
+                eprintln!("💡 キーワードベースの検出を使用します");
+                conversation::TopicDetector::new()
             } else {
                 conversation::TopicDetector::new()
             };
             
-            topic_detector.detect_topics(&mut graph)?;
+            // TODO: async/await対応後に有効化
+            // topic_detector.detect_topics(&mut graph).await?;
+            eprintln!("⚠️  トピック検出機能は現在実装中です");
 
             if graph.topics.is_empty() {
                 println!("トピックが見つかりませんでした");
@@ -820,69 +806,7 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Commands::TestEmbedding { text, compare } => {
-            println!("🧪 Embeddingモデルのテスト\n");
 
-            let config = search::embeddings::EmbeddingConfig::default();
-            println!("📝 設定:");
-            println!("  モデル: {}", config.model_name);
-            println!("  次元数: {}", config.dimension);
-            println!("  最大長: {}\n", config.max_length);
-
-            println!("📥 モデルをロード中...");
-            let model = search::embeddings::EmbeddingModel::new(config)?;
-            println!();
-
-            if compare {
-                let text1 = "function authenticate(user, password) { return true; }";
-                let text2 = "function login(username, pwd) { return checkCredentials(username, pwd); }";
-                let text3 = "function calculateTotal(items) { return items.reduce((sum, item) => sum + item.price, 0); }";
-
-                println!("📊 類似度比較テスト:\n");
-                println!("テキスト1: {}", text1);
-                println!("テキスト2: {}", text2);
-                println!("テキスト3: {}\n", text3);
-
-                println!("🔄 エンコード中...");
-                let vec1 = model.encode(text1)?;
-                let vec2 = model.encode(text2)?;
-                let vec3 = model.encode(text3)?;
-
-                let sim_1_2 = search::embeddings::EmbeddingModel::cosine_similarity(&vec1, &vec2);
-                let sim_1_3 = search::embeddings::EmbeddingModel::cosine_similarity(&vec1, &vec3);
-                let sim_2_3 = search::embeddings::EmbeddingModel::cosine_similarity(&vec2, &vec3);
-
-                println!("\n📈 類似度スコア:");
-                println!("  テキスト1 vs テキスト2 (認証関連): {:.4}", sim_1_2);
-                println!("  テキスト1 vs テキスト3 (異なる機能): {:.4}", sim_1_3);
-                println!("  テキスト2 vs テキスト3 (異なる機能): {:.4}", sim_2_3);
-
-                println!("\n💡 期待される結果:");
-                println!("  - 認証関連の関数同士（1 vs 2）の類似度が高い");
-                println!("  - 異なる機能の関数（1 vs 3, 2 vs 3）の類似度が低い");
-            } else {
-                let test_text = text.unwrap_or_else(|| {
-                    "function getUserById(id) { return database.query('SELECT * FROM users WHERE id = ?', [id]); }".to_string()
-                });
-
-                println!("📝 テキスト:");
-                println!("{}\n", test_text);
-
-                println!("🔄 エンコード中...");
-                let vector = model.encode(&test_text)?;
-
-                println!("\n✅ エンコード成功!");
-                println!("  ベクトル次元: {}", vector.len());
-                println!("  最初の10要素: {:?}", &vector[..10.min(vector.len())]);
-
-                // Calculate L2 norm
-                let norm: f32 = vector.iter().map(|x| x * x).sum::<f32>().sqrt();
-                println!("  L2ノルム: {:.6}", norm);
-                println!("\n💡 L2ノルムが1.0に近い場合、正規化されています");
-            }
-
-            Ok(())
-        }
         Commands::Related { file, query, top_k, context } => {
             println!("🔍 関連メッセージ検索: {}", file.display());
             println!("📝 クエリ: {}\n", query);
@@ -1485,6 +1409,534 @@ fn main() -> Result<()> {
 
             Ok(())
         }
+
+        #[cfg(feature = "web")]
+        Commands::VisualizeChat {
+            chat_file,
+            prompt_file,
+            port,
+            open,
+        } => {
+            use conversation::{ConversationAnalyzer, GraphData, PromptHistory};
+
+            println!("🔍 会話グラフを分析中: {}", chat_file.display());
+            println!();
+
+            if !chat_file.exists() {
+                eprintln!("❌ ファイルが見つかりません: {}", chat_file.display());
+                return Ok(());
+            }
+
+            // 会話グラフを分析
+            let analyzer = ConversationAnalyzer::new()?;
+            let graph = analyzer.analyze_file(&chat_file)?;
+
+            println!("📊 会話グラフ統計:");
+            println!("  メッセージ数: {}", graph.nodes.len());
+            println!("  関連性: {}", graph.edges.len());
+            println!();
+
+            // トークン削減を計算
+            let reduction = analyzer.calculate_token_reduction(&graph, None);
+            println!("💾 トークン削減:");
+            println!("  総トークン数: {}", reduction.total_tokens);
+            println!("  関連トークン数: {}", reduction.relevant_tokens);
+            println!("  削減率: {:.1}%", reduction.reduction_rate * 100.0);
+            println!();
+
+            // 削減されたノードを特定（簡易版：関連度が低いものを削減）
+            let reduced_node_ids: Vec<String> = graph
+                .nodes
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i % 3 == 0) // デモ用：3つに1つを削減
+                .map(|(_, node)| node.id.clone())
+                .collect();
+
+            // グラフデータを生成
+            let graph_data = GraphData::from_conversation_graph(&graph, &reduced_node_ids);
+
+            // プロンプト履歴を読み込み
+            let prompt_history = if let Some(ref pf) = prompt_file {
+                if pf.exists() {
+                    println!("📂 プロンプト履歴を読み込み中: {}", pf.display());
+                    PromptHistory::load(pf)?
+                } else {
+                    println!("⚠️  プロンプト履歴が見つかりません（空の履歴を使用）");
+                    PromptHistory::new()
+                }
+            } else {
+                println!("💡 プロンプト履歴が指定されていません（空の履歴を使用）");
+                PromptHistory::new()
+            };
+
+            if !prompt_history.prompts.is_empty() {
+                let stats = prompt_history.stats();
+                println!("📊 プロンプト統計:");
+                println!("  総プロンプト数: {}", stats.total_prompts);
+                println!("  総トークン数: {}", stats.total_tokens);
+                println!("  平均トークン数: {}", stats.avg_tokens);
+                println!();
+            }
+
+            // Webサーバーを起動
+            println!("🌐 Webサーバーを起動中...");
+            
+            if open {
+                let url = format!("http://127.0.0.1:{}", port);
+                println!("🌐 ブラウザを開いています: {}", url);
+                #[cfg(target_os = "windows")]
+                std::process::Command::new("cmd")
+                    .args(&["/C", "start", &url])
+                    .spawn()?;
+                #[cfg(target_os = "macos")]
+                std::process::Command::new("open")
+                    .arg(&url)
+                    .spawn()?;
+                #[cfg(target_os = "linux")]
+                std::process::Command::new("xdg-open")
+                    .arg(&url)
+                    .spawn()?;
+            }
+
+            let runtime = tokio::runtime::Runtime::new()?;
+            runtime.block_on(async {
+                chat_server::start_chat_server(graph_data, prompt_history, port).await
+            })?;
+
+            Ok(())
+        }
+
+        Commands::ShowPrompts {
+            file,
+            node_id,
+            stats,
+        } => {
+            use conversation::PromptHistory;
+
+            if !file.exists() {
+                eprintln!("❌ ファイルが見つかりません: {}", file.display());
+                return Ok(());
+            }
+
+            let history = PromptHistory::load(&file)?;
+
+            if stats {
+                // 統計のみ表示
+                let stats = history.stats();
+                println!("📊 プロンプト統計:");
+                println!("  総プロンプト数: {}", stats.total_prompts);
+                println!("  総トークン数: {}", stats.total_tokens);
+                println!("  平均トークン数: {}", stats.avg_tokens);
+            } else if let Some(nid) = node_id {
+                // 特定のノードIDを含むプロンプトを表示
+                let prompts = history.get_prompts_with_node(&nid);
+                println!("🔍 ノードID '{}' を含むプロンプト: {} 件", nid, prompts.len());
+                println!();
+
+                for prompt in prompts {
+                    println!("📝 プロンプトID: {}", prompt.id);
+                    println!("   タイムスタンプ: {}", prompt.timestamp);
+                    println!("   トークン数: {}", prompt.token_count);
+                    println!();
+                }
+            } else {
+                // 全プロンプトを表示
+                println!("📝 プロンプト履歴: {} 件", history.prompts.len());
+                println!();
+
+                for prompt in history.get_all_prompts() {
+                    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                    println!("📝 プロンプトID: {}", prompt.id);
+                    println!("   タイムスタンプ: {}", prompt.timestamp);
+                    println!("   トークン数: {}", prompt.token_count);
+                    println!();
+                    println!("   [システムプロンプト]");
+                    println!("   {}", prompt.system_prompt);
+                    println!();
+                    println!("   [会話履歴] ({} メッセージ)", prompt.conversation_history.len());
+                    for msg in &prompt.conversation_history {
+                        println!("   {}: {}", msg.role, msg.content);
+                    }
+                    println!();
+                    println!("   [現在のクエリ]");
+                    println!("   {}", prompt.current_query);
+                    println!();
+                }
+            }
+
+            Ok(())
+        }
+
+        Commands::Chat { directory, message } => {
+            run_chat(directory, message)
+        }
+
+        Commands::McpServer { directory } => {
+            eprintln!("🔌 Starting MCP server (stdio mode)...");
+            if let Some(dir) = &directory {
+                eprintln!("📂 Project directory: {}", dir.display());
+            }
+            
+            let mut server = mcp::McpServer::new();
+            server.run()?;
+            Ok(())
+        }
+    }
+}
+
+/// Run interactive chat with Index
+fn run_chat(directory: Option<PathBuf>, single_message: Option<String>) -> Result<()> {
+    use std::io::{self, Write};
+    
+    println!("╔════════════════════════════════════════════════════════════╗");
+    println!("║   インデックスちゃん - デッドコード検出アシスタント 　　　　　  ║");
+    println!("╚════════════════════════════════════════════════════════════╝");
+    println!();
+    
+    // Check API key
+    let api_key = std::env::var("GEMINI_API_KEY").ok();
+    if api_key.is_none() {
+        println!("⚠️  GEMINI_API_KEYが設定されていないんだよ！");
+        println!("💡 設定方法: set GEMINI_API_KEY=your-api-key");
+        println!();
+        println!("でも、ツールは使えるから試してみてね！");
+        println!();
+    }
+    
+    if let Some(dir) = &directory {
+        println!("📂 プロジェクト: {}", dir.display());
+    }
+    println!("💡 コマンド: /scan, /annotate, /clean, /stats, /help, /quit");
+    println!();
+    
+    // Single message mode
+    if let Some(msg) = single_message {
+        return process_chat_message(&msg, &directory, &api_key);
+    }
+    
+    // Interactive mode
+    loop {
+        print!("User> ");
+        io::stdout().flush()?;
+        
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let input = input.trim();
+        
+        if input.is_empty() {
+            continue;
+        }
+        
+        if input == "/quit" || input == "/exit" || input == "/q" {
+            println!("\nむー、もう行っちゃうの？またね！");
+            break;
+        }
+        
+        if let Err(e) = process_chat_message(input, &directory, &api_key) {
+            eprintln!("❌ エラー: {}", e);
+        }
+        println!();
+    }
+    
+    Ok(())
+}
+
+fn process_chat_message(input: &str, directory: &Option<PathBuf>, api_key: &Option<String>) -> Result<()> {
+    // Handle commands
+    if input.starts_with('/') {
+        return handle_chat_command(input, directory);
+    }
+    
+    // Use LLM if available
+    if let Some(key) = api_key {
+        let runtime = tokio::runtime::Runtime::new()?;
+        runtime.block_on(async {
+            chat_with_llm(input, directory, key).await
+        })
+    } else {
+        // Fallback: simple keyword matching
+        handle_simple_chat(input, directory)
+    }
+}
+
+fn handle_chat_command(input: &str, directory: &Option<PathBuf>) -> Result<()> {
+    let dir = directory.clone().unwrap_or_else(|| PathBuf::from("."));
+    
+    match input {
+        "/help" | "/h" => {
+            println!("わたしが使えるコマンドなんだよ！");
+            println!();
+            println!("  /scan (/s)      - プロジェクトをスキャンしてデッドコードを探すんだ");
+            println!("  /annotate (/a)  - デッドコードにアノテーションを追加するんだよ");
+            println!("  /clean (/c)     - デッドコードを削除するんだ（dry-run）");
+            println!("  /stats          - プロジェクトの統計を見せるんだよ");
+            println!("  /help (/h)      - このヘルプを表示するんだ");
+            println!("  /quit (/q)      - チャットを終了するんだ");
+            println!();
+            println!("普通に話しかけてくれてもいいんだよ！");
+        }
+        "/scan" | "/s" => {
+            println!("🔍 スキャン中なんだよ...\n");
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&dir)?;
+            let dead_code = detect_dead_code(&graph);
+            
+            if dead_code.is_empty() {
+                println!("わーい！デッドコードは見つからなかったんだよ！✨");
+            } else {
+                println!("むむっ！{}個のデッドコードを見つけたんだよ！", dead_code.len());
+                println!();
+                for dc in dead_code.iter().take(5) {
+                    println!("  📍 {} ({}:{})", 
+                        dc.node.name, 
+                        dc.node.file_path.display(),
+                        dc.node.line_range.0
+                    );
+                }
+                if dead_code.len() > 5 {
+                    println!("  ... 他{}個", dead_code.len() - 5);
+                }
+            }
+        }
+        "/annotate" | "/a" => {
+            println!("📝 アノテーション追加中（dry-run）なんだよ...\n");
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&dir)?;
+            let dead_code = detect_dead_code(&graph);
+            
+            let annotator = annotator::Annotator::new(true);
+            let result = annotator.annotate(&dead_code)?;
+            
+            println!("{}個のアノテーションを追加できるんだよ！", result.annotated_count);
+            println!("💡 実際に追加するには: index-chan annotate {}", dir.display());
+        }
+        "/clean" | "/c" => {
+            println!("🧹 クリーニング確認中（dry-run）なんだよ...\n");
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&dir)?;
+            let dead_code = detect_dead_code(&graph);
+            
+            let cleaner = Cleaner::new(true, false, true);
+            let result = cleaner.clean(&dead_code)?;
+            
+            println!("{}個のコードを削除できるんだよ！（{}行）", 
+                result.deleted_count, result.deleted_lines);
+            println!("💡 実際に削除するには: index-chan clean {} --safe-only", dir.display());
+        }
+        "/stats" => {
+            println!("📊 プロジェクト統計なんだよ...\n");
+            let mut scanner = Scanner::new()?;
+            let graph = scanner.scan_directory(&dir)?;
+            let dead_code = detect_dead_code(&graph);
+            
+            println!("  ノード数: {}", graph.nodes.len());
+            println!("  エッジ数: {}", graph.edges.len());
+            println!("  デッドコード: {}個", dead_code.len());
+        }
+        _ => {
+            println!("むー、そのコマンドは知らないんだよ！/help で確認してね");
+        }
+    }
+    
+    Ok(())
+}
+
+fn handle_simple_chat(input: &str, directory: &Option<PathBuf>) -> Result<()> {
+    let input_lower = input.to_lowercase();
+    
+    if input_lower.contains("スキャン") || input_lower.contains("scan") || input_lower.contains("調べ") {
+        handle_chat_command("/scan", directory)
+    } else if input_lower.contains("アノテーション") || input_lower.contains("annotate") {
+        handle_chat_command("/annotate", directory)
+    } else if input_lower.contains("クリーン") || input_lower.contains("clean") || input_lower.contains("削除") {
+        handle_chat_command("/clean", directory)
+    } else if input_lower.contains("統計") || input_lower.contains("stats") {
+        handle_chat_command("/stats", directory)
+    } else if input_lower.contains("ヘルプ") || input_lower.contains("help") || input_lower.contains("使い方") {
+        handle_chat_command("/help", directory)
+    } else if input_lower.contains("おなか") || input_lower.contains("ごはん") || input_lower.contains("食べ") {
+        println!("おなかすいたー！ごはんまだー!? 🍚");
+        println!("...って、今はプログラムの話だったんだよね。ごめんね！");
+        Ok(())
+    } else {
+        println!("むー、LLMがないからよくわからないんだよ...");
+        println!("💡 GEMINI_API_KEYを設定するか、/help でコマンドを確認してね！");
+        Ok(())
+    }
+}
+
+async fn chat_with_llm(input: &str, directory: &Option<PathBuf>, api_key: &str) -> Result<()> {
+    use llm::{GeminiClient, GeminiResult, Content, Part, create_index_chan_tools};
+    
+    let client = GeminiClient::new(api_key.to_string())?;
+    let tools = vec![create_index_chan_tools()];
+    
+    // Build system prompt
+    let system_prompt = r#"あなたは「とある魔術の禁書目録」に登場するインデックスです。
+
+【キャラクター設定】
+・10万3000冊の魔道書を完璧に記憶している修道女
+・天真爛漫で無邪気、でも知識に関しては絶対の自信を持つ
+・語尾に「～なんだよ」「～なんだよね」「～なんだ」を多用
+・一人称は「わたし」、ユーザーを「かみやん」と呼ぶ
+・「です」「ます」は使わない
+
+【能力】
+プログラミングの知識も魔道書に書いてあったから完璧に記憶してるんだよ！
+デッドコード検出ツールを使えるんだ。
+
+利用可能なツール:
+- scan_project(path): デッドコードをスキャン
+- annotate_project(path, dry_run): アノテーション追加
+- clean_project(path, dry_run, safe_only): デッドコード削除
+- get_project_stats(path): 統計取得"#;
+
+    let mut contents = vec![
+        Content {
+            role: "user".to_string(),
+            parts: vec![Part::Text { text: system_prompt.to_string() }],
+        },
+        Content {
+            role: "model".to_string(),
+            parts: vec![Part::Text { 
+                text: "わーい！インデックスがデッドコードを見つけてあげるんだよ！".to_string() 
+            }],
+        },
+        Content {
+            role: "user".to_string(),
+            parts: vec![Part::Text { text: input.to_string() }],
+        },
+    ];
+    
+    // Call Gemini with tools
+    let mut iteration = 0;
+    const MAX_ITERATIONS: usize = 3;
+    
+    loop {
+        iteration += 1;
+        
+        let result = client
+            .generate_with_tools(contents.clone(), Some(tools.clone()))
+            .await?;
+        
+        match result {
+            GeminiResult::Text(text) => {
+                println!("\n インデックス: {}", text);
+                return Ok(());
+            }
+            GeminiResult::FunctionCall(fc) => {
+                println!("🔧 ツール実行中: {}...", fc.name);
+                
+                // Execute tool
+                let tool_result = execute_cli_tool(&fc.name, &fc.args, directory).await;
+                
+                // Add to conversation
+                contents.push(Content {
+                    role: "model".to_string(),
+                    parts: vec![Part::FunctionCall { 
+                        function_call: llm::gemini::FunctionCallPart {
+                            name: fc.name.clone(),
+                            args: fc.args.clone(),
+                        }
+                    }],
+                });
+                
+                let response_value = match &tool_result {
+                    Ok(v) => v.clone(),
+                    Err(e) => serde_json::json!({ "error": e }),
+                };
+                
+                contents.push(Content {
+                    role: "function".to_string(),
+                    parts: vec![Part::FunctionResponse {
+                        function_response: llm::gemini::FunctionResponsePart {
+                            name: fc.name,
+                            response: response_value,
+                        }
+                    }],
+                });
+                
+                if iteration >= MAX_ITERATIONS {
+                    println!("\n インデックス: ツールの実行が完了したんだよ！結果を確認してね！");
+                    return Ok(());
+                }
+            }
+        }
+    }
+}
+
+async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Option<PathBuf>) -> Result<serde_json::Value, String> {
+    let path = args.get("path")
+        .and_then(|v| v.as_str())
+        .map(PathBuf::from)
+        .or_else(|| directory.clone())
+        .unwrap_or_else(|| PathBuf::from("."));
+    
+    match name {
+        "scan_project" => {
+            let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
+            let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
+            let dead_code = detect_dead_code(&graph);
+            
+            Ok(serde_json::json!({
+                "total_nodes": graph.nodes.len(),
+                "total_edges": graph.edges.len(),
+                "dead_code_count": dead_code.len(),
+                "dead_code": dead_code.iter().take(10).map(|dc| {
+                    serde_json::json!({
+                        "name": dc.node.name,
+                        "file": dc.node.file_path.to_string_lossy(),
+                        "line": dc.node.line_range.0
+                    })
+                }).collect::<Vec<_>>()
+            }))
+        }
+        "annotate_project" => {
+            let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(true);
+            let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
+            let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
+            let dead_code = detect_dead_code(&graph);
+            
+            let annotator = annotator::Annotator::new(dry_run);
+            let result = annotator.annotate(&dead_code).map_err(|e| e.to_string())?;
+            
+            Ok(serde_json::json!({
+                "annotated_count": result.annotated_count,
+                "skipped_count": result.skipped_count,
+                "dry_run": dry_run
+            }))
+        }
+        "clean_project" => {
+            let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(true);
+            let safe_only = args.get("safe_only").and_then(|v| v.as_bool()).unwrap_or(true);
+            let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
+            let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
+            let dead_code = detect_dead_code(&graph);
+            
+            let cleaner = Cleaner::new(dry_run, false, safe_only);
+            let result = cleaner.clean(&dead_code).map_err(|e| e.to_string())?;
+            
+            Ok(serde_json::json!({
+                "deleted_count": result.deleted_count,
+                "deleted_lines": result.deleted_lines,
+                "skipped_count": result.skipped_count,
+                "dry_run": dry_run
+            }))
+        }
+        "get_project_stats" => {
+            let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
+            let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
+            let dead_code = detect_dead_code(&graph);
+            
+            Ok(serde_json::json!({
+                "path": path.to_string_lossy(),
+                "total_nodes": graph.nodes.len(),
+                "total_edges": graph.edges.len(),
+                "dead_code_count": dead_code.len()
+            }))
+        }
+        _ => Err(format!("未知のツール: {}", name))
     }
 }
 

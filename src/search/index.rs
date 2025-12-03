@@ -1,10 +1,7 @@
-// Code index for vector search
+// Code index for simple text search
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::PathBuf;
-
-use super::embeddings::{EmbeddingModel, EmbeddingConfig};
 
 /// Metadata for indexed code
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,43 +21,22 @@ pub struct SearchResult {
     pub score: f32,
 }
 
-/// Code index for vector search
+/// Code index for simple text search
 pub struct CodeIndex {
-    vectors: Vec<Vec<f32>>,
     metadata: Vec<CodeMetadata>,
-    embedding_model: EmbeddingModel,
-    #[allow(dead_code)]
-    cache: HashMap<String, Vec<f32>>,
 }
 
 impl CodeIndex {
     /// Create a new code index
     pub fn new() -> Result<Self> {
-        let config = EmbeddingConfig::default();
-        let embedding_model = EmbeddingModel::new(config)?;
-        
         Ok(Self {
-            vectors: Vec::new(),
             metadata: Vec::new(),
-            embedding_model,
-            cache: HashMap::new(),
         })
     }
 
     /// Add code to the index
     pub fn add(&mut self, metadata: CodeMetadata) -> Result<()> {
-        let text = format!(
-            "{} {} {}",
-            metadata.function_name,
-            metadata.code_snippet,
-            metadata.dependencies.join(" ")
-        );
-        
-        let vector = self.embedding_model.encode(&text)?;
-        
-        self.vectors.push(vector);
         self.metadata.push(metadata);
-        
         Ok(())
     }
 
@@ -72,18 +48,41 @@ impl CodeIndex {
         Ok(())
     }
 
-    /// Search for similar code
+    /// Search for similar code using simple text matching
     pub fn search(&self, query: &str, top_k: usize) -> Result<Vec<SearchResult>> {
-        let query_vector = self.embedding_model.encode(query)?;
+        let query_lower = query.to_lowercase();
         
         let mut results: Vec<(usize, f32)> = self
-            .vectors
+            .metadata
             .iter()
             .enumerate()
-            .map(|(i, vec)| {
-                let score = EmbeddingModel::cosine_similarity(&query_vector, vec);
+            .map(|(i, meta)| {
+                let text = format!(
+                    "{} {} {}",
+                    meta.function_name,
+                    meta.code_snippet,
+                    meta.dependencies.join(" ")
+                ).to_lowercase();
+                
+                // Simple text matching score
+                let score = if text.contains(&query_lower) {
+                    1.0
+                } else {
+                    let query_words: Vec<&str> = query_lower.split_whitespace().collect();
+                    let matches = query_words.iter()
+                        .filter(|qw| text.contains(*qw))
+                        .count();
+                    
+                    if query_words.is_empty() {
+                        0.0
+                    } else {
+                        matches as f32 / query_words.len() as f32
+                    }
+                };
+                
                 (i, score)
             })
+            .filter(|(_, score)| *score > 0.0)
             .collect();
         
         // Sort by score (descending)
@@ -126,7 +125,6 @@ impl CodeIndex {
         let metadata_list: Vec<CodeMetadata> = serde_json::from_str(&data)?;
         
         self.metadata.clear();
-        self.vectors.clear();
         
         self.add_batch(metadata_list)?;
         

@@ -13,26 +13,15 @@ pub struct LLMConfig {
 impl Default for LLMConfig {
     fn default() -> Self {
         Self {
-            model_name: "Qwen/Qwen2.5-Coder-1.5B-Instruct".to_string(),
+            model_name: "gemini-2.0-flash".to_string(),
             model_path: None,
             temperature: 0.7,
-            max_tokens: 512,
+            max_tokens: 2048,
             confidence_threshold: 0.85,
         }
     }
 }
 
 impl LLMConfig {
-    pub fn get_cache_dir() -> PathBuf {
-        let home = dirs::home_dir().expect("Failed to get home directory");
-        home.join(".cache").join("index-chan").join("models")
-    }
-
-    pub fn get_model_path(&self) -> PathBuf {
-        if let Some(path) = &self.model_path {
-            path.clone()
-        } else {
-            Self::get_cache_dir().join(&self.model_name)
-        }
-    }
+    // Gemini APIを使用するため、ローカルモデルパスは不要
 }

@@ -1,0 +1,43 @@
+# Index-chan Tools Usage Guide
+
+このプロジェクトでは index-chan MCP ツールが利用可能です。
+コードの調査や修正を行う際は、積極的に活用してください。
+
+## 調査フェーズ
+
+1. **プロジェクト全体像の把握**
+   - `scan` でデッドコード検出
+   - `stats` でプロジェクト統計
+
+2. **特定機能の調査**
+   - `gather_context` で依存関係込みのコードを取得
+   - ファイルを直接読むより効率的
+
+3. **依存関係の確認**
+   - `get_dependencies`: この関数が使っている関数
+   - `get_dependents`: この関数を使っている関数
+
+## 修正フェーズ
+
+1. 修正対象を `gather_context` で取得
+2. 修正案を作成
+3. 影響範囲を `get_dependents` で確認
+
+## ツール一覧
+
+- `scan`: デッドコード検出
+- `stats`: プロジェクト統計
+- `search`: コード検索
+- `gather_context`: 依存関係込みコンテキスト取得
+- `get_dependencies`: 依存先取得
+- `get_dependents`: 依存元取得
+
+## 使用例
+
+```
+# 認証機能のコンテキストを取得
+gather_context(directory=".", entry_point="authenticateUser", depth=2)
+
+# 関数の影響範囲を確認
+get_dependents(directory=".", function_name="validateInput", depth=2)
+```

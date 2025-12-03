@@ -8,46 +8,64 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
   
-  記憶を持つ司書 - コード検索と会話グラフ（Phase 2完了）
+  LLMエージェント向けコード解析・変更ツール（Phase 6完了 - MVP達成！）
 </div>
 
 ## 概要
 
-**現在の機能（Phase 2完了 v0.2.0）:**
-index-chanは、TypeScriptプロジェクトのデッドコード検出、コード検索、会話履歴分析を統合したCLIツールです。
+**🎉 MVP達成！（Phase 6完了 - v0.3.0）**
+
+index-chanは、LLMエージェント（Kiro、Cursor等）向けに設計されたコード解析・変更ツールです。9個のMCP（Model Context Protocol）ツールを提供し、LLMが安全にコードを理解・修正できるようにします。
 
 **主な機能:**
-├─ デッドコード検出と削除（Phase 1）
-├─ LLM統合による高精度分析（Phase 1.5）
-├─ コード検索（ベクトル検索）（Phase 2）
-└─ 会話グラフと関連メッセージ検索（Phase 2）
+- **デッドコード検出**: 未使用コードを自動検出
+- **コンテキスト生成**: 関数と依存関係を自動収集
+- **一括変更**: 変更の検証・プレビュー・安全な適用
+- **Import検証**: 依存グラフを使用してLLMのハルシネーションを防止
+- **自動バックアップ**: タイムスタンプ付きで安全性を確保
 
-**将来のビジョン:**
-最終的には、依存グラフとベクトル検索を組み合わせた「コード依存グラフ型検索システム」を目指しています。LLMが正確なコンテキストでコードを理解・編集できるようにする次世代の開発支援ツールです。詳細は[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
+**アーキテクチャ:**
+```
+LLMエージェント（Kiro/Cursor）
+    ↓ MCPプロトコル
+index-chan MCPサーバー
+    ↓ 依存グラフ
+TypeScriptプロジェクト
+```
 
 ## 機能
 
-### Phase 1: デッドコード検出 ✅
-- TypeScriptのAST解析
-- 関数呼び出しの依存グラフ構築
-- 未使用関数・クラスの検出
-- 安全性レベル評価（確実に安全/おそらく安全/要確認）
-- 削除機能（対話的/自動）
-- アノテーション機能（警告抑制コメント自動追加）
+### MCPツール（Phase 6 ✅ 完了）
 
-### Phase 1.5: LLM統合 ✅
-- Qwen2.5-Coder-1.5Bによる高精度分析
-- 「将来使う予定」の自動検出
-- 実験的機能・WIPの識別
-- 完全ローカル実行（プライバシー保護）
-- 意味のある日本語応答を生成
+**LLMエージェント向けの9個のMCPツール:**
 
-### Phase 2: 検索 + 会話グラフ ✅
-- **コード検索**: ベクトル検索によるセマンティック検索
-- **会話グラフ**: 会話履歴のグラフ化とトピック検出
-- **関連メッセージ検索**: 過去の会話から関連部分を抽出
-- **トークン削減**: 39.5〜60%のコンテキスト削減
-- **LLMトピック検出**: 高精度なトピック分類
+**基本機能:**
+1. **scan**: デッドコード検出
+2. **search**: コード検索（要インデックス作成）
+3. **stats**: プロジェクト統計
+
+**コンテキスト生成:**
+4. **gather_context**: 関数と依存関係を含むコンテキスト生成
+5. **get_dependencies**: 指定関数の依存先を取得
+6. **get_dependents**: 指定関数の依存元を取得
+
+**一括変更:**
+7. **validate_changes**: 変更の妥当性を検証
+8. **preview_changes**: 変更内容を差分表示
+9. **apply_changes**: 検証済み変更を安全に適用
+
+### コア機能
+
+- **TypeScript AST解析**: tree-sitterによる高速解析
+- **依存グラフ**: 構築と解析
+- **デッドコード検出**: 未使用関数・クラスの検出
+- **安全性レベル評価**: 確実に安全/おそらく安全/要確認
+- **対話的・自動削除**: 柔軟な削除モード
+- **アノテーション機能**: 警告抑制コメント自動追加
+- **Import検証**: 依存グラフを使用（LLMのハルシネーション防止）
+- **自動バックアップ**: タイムスタンプ付き
+- **Undo機能**: マニフェスト方式で安全な復元（Phase 7.1 ✅）
+- **.indexchanignore**: スキャン対象の柔軟な除外（Phase 7.1 ✅）
 
 ## インストール
 
@@ -55,7 +73,64 @@ index-chanは、TypeScriptプロジェクトのデッドコード検出、コー
 cargo install --path .
 ```
 
-## 使い方
+## クイックスタート
+
+### LLMエージェント（Kiro/Cursor）向け
+
+**1. index-chanをビルド:**
+```bash
+cargo build --release
+```
+
+**2. KiroでMCPを設定:**
+
+`~/.kiro/settings/mcp.json`を編集:
+```json
+{
+  "mcpServers": {
+    "index-chan": {
+      "command": "/path/to/index-chan/target/release/index-chan",
+      "args": ["mcp-server"],
+      "disabled": false,
+      "autoApprove": [
+        "scan",
+        "stats",
+        "search",
+        "gather_context",
+        "get_dependencies",
+        "get_dependents"
+      ]
+    }
+  }
+}
+```
+
+**3. LLMから使用:**
+```
+ユーザー: 「認証機能にレート制限を追加して」
+
+LLM: index-chan.gather_context({
+       directory: ".",
+       entry_point: "authenticateUser",
+       depth: 2
+     })
+     → 関連コードを取得
+
+LLM: コードを修正
+
+LLM: index-chan.validate_changes({...})
+     → 変更を検証
+
+LLM: index-chan.preview_changes({...})
+     → 差分を表示
+
+ユーザー: 「適用して」
+
+LLM: index-chan.apply_changes({...})
+     → バックアップ付きで適用完了
+```
+
+## CLI使用方法
 
 ### スキャン（検出のみ）
 
@@ -393,6 +468,47 @@ index-chan related chat_history.json "エラー" -k 3 --context
   削減率: 39.5%
 ```
 
+### 会話グラフUI & プロンプト可視化（Phase 2.5 🚧）
+
+```bash
+# Web機能を有効にしてビルド
+cargo build --features web --release
+
+# 会話グラフUIを起動
+cargo run --features web --release -- visualize-chat test_project/chat_history.json --prompt-file test_project/prompt_history.json --port 8081
+
+# ブラウザ自動起動
+cargo run --features web --release -- visualize-chat test_project/chat_history.json --prompt-file test_project/prompt_history.json --port 8081 --open
+```
+
+**機能:**
+- Cytoscape.jsによるインタラクティブな会話グラフ
+- 削減されたメッセージの視覚化（透明度、色分け）
+- プロンプト履歴の表示（シンタックスハイライト）
+- グラフとプロンプトの連携（クリックで相互ジャンプ）
+- トークン削減率の表示
+- リアルタイム統計
+
+**ブラウザで開く:** http://localhost:8081
+
+**プロンプト履歴の表示:**
+```bash
+# プロンプト統計のみ表示
+index-chan show-prompts test_project/prompt_history.json --stats
+
+# 出力例
+📊 プロンプト統計:
+  総プロンプト数: 3
+  総トークン数: 1368
+  平均トークン数: 456
+
+# 全プロンプトを表示
+index-chan show-prompts test_project/prompt_history.json
+
+# 特定のノードIDを含むプロンプトを検索
+index-chan show-prompts test_project/prompt_history.json --node-id "0"
+```
+
 ### Embeddingモデルのテスト
 
 ```bash
@@ -435,9 +551,7 @@ index-chan test-embedding --compare
 
 ## 開発状況とロードマップ
 
-### 現在の位置: Phase 2（検索 + 会話グラフ基礎）進行中 🚧
-
-このプロジェクトは段階的に開発されています：
+### 🎉 MVP達成！（Phase 6完了）
 
 **Phase 1: デッドコード検出CLI** ✅ 完了
 - TypeScript解析と依存グラフ構築
@@ -447,97 +561,90 @@ index-chan test-embedding --compare
 - ローカルLLMによる高精度分析
 - 「将来使う予定」のコード識別
 
-**Phase 2: 検索 + 会話グラフ基礎** ✅ 完了
+**Phase 2: 検索 + 会話グラフ** ✅ 完了
 - ベクトル検索によるコード検索
 - 会話グラフによるチャット履歴分析
-- 関連メッセージ検索
 - トークン削減（39.5〜60%達成）
 
-**Phase 3: 3D依存関係グラフ可視化** ✅ 完了
-- Phase 3.1: グラフエクスポート ✅ 完了
-  - GraphML/DOT/JSON形式対応
-  - Gephi、Graphviz等で可視化可能
-- Phase 3.2: Web可視化 ✅ 完了
-  - Three.js + force-graph-3dによる3D表示
-  - インタラクティブな操作
-  - リアルタイム統計表示
+**Phase 3: グラフ可視化** ✅ 完了
+- GraphML/DOT/JSONエクスポート
+- 3D Web可視化
 
-**Phase 4: データベース層 + 自動追跡** 🚧 進行中
-- データベース層の基礎 ✅ 完了
-  - SQLiteによる状態管理
-  - ファイルハッシュベースの変更検知
-  - 依存関係の永続化
-- initコマンド（計画中）
-  - プロジェクト初期化
-  - 自動言語検出
-- ファイルウォッチャー（計画中）
-  - リアルタイム変更追跡
-  - 差分更新
+**Phase 4: データベース層** ✅ 完了
+- SQLite永続化
+- ファイル監視と自動更新
 
-詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)を参照してください。
+**Phase 6: MCP統合** ✅ 完了（MVP！）
+- LLMエージェント向け9個のMCPツール
+- 依存関係を含むコンテキスト生成
+- 検証付き一括変更
+- Import検証（ハルシネーション防止）
+- 自動バックアップ
 
-### Phase 1 完了項目 ✅
+**Phase 5: Tauriデスクトップアプリ** ❄️ 凍結
+- CLI/MCPに集中するため延期
+
+詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)、ロードマップは[Doc/MVP/MVP_ロードマップ.md](Doc/MVP/MVP_ロードマップ.md)を参照してください。
+
+### 完了したPhase ✅
+
+**Phase 1: デッドコード検出**
 - [x] TypeScript解析（tree-sitter）
 - [x] 依存グラフ構築
 - [x] デッドコード検出
 - [x] 削除機能（対話的/自動）
 - [x] アノテーション機能
 
-### Phase 1.5 完了項目 ✅
+**Phase 1.5: LLM統合**
 - [x] LLM統合（Qwen2.5-Coder-1.5B）
 - [x] ローカル推論
 - [x] コンテキスト収集（Git履歴）
 - [x] 高精度分析
 
-### Phase 2 完了 ✅
-- [x] ベクトル検索基盤（Week 1）
-- [x] 会話グラフ基盤（Week 1）
-- [x] CLI統合（Week 1）
-- [x] Embeddingモデル統合（Week 2）
-  - CandleによるBERTモデル実装
-  - Mean pooling + L2正規化
-  - フォールバックモード（シンプルハッシュ）
-  - test-embeddingコマンド実装
-- [x] トピック検出の改善（Week 3）
-  - LLMによる高精度トピック推定
-  - 日本語キーワード抽出改善
-  - CLI統合（--llmオプション）
-- [x] 関連会話抽出（Week 4）
-  - セマンティック検索による関連メッセージ抽出
-  - コンテキストウィンドウ機能
-  - トークン削減計算（39.5〜60%達成）
-  - 警告の完全修正
-- [ ] Python対応（Week 11-12）
-- [ ] VSCode拡張（オプション）
-- [ ] プロンプトの最適化
-- [ ] エラーハンドリングの改善
+**Phase 2: 検索 + 会話グラフ**
+- [x] ベクトル検索基盤
+- [x] 会話グラフ基盤
+- [x] CLI統合
+- [x] Embeddingモデル統合（CandleによるBERT）
+- [x] トピック検出
+- [x] 関連メッセージ検索
+- [x] トークン削減（39.5〜60%達成）
 
-### Phase 3 完了項目 ✅
-- [x] Phase 3.1: グラフエクスポート
-  - [x] GraphML形式出力
-  - [x] DOT形式出力（Graphviz互換）
-  - [x] JSON形式出力
-  - [x] 無効エッジのフィルタリング
-- [x] Phase 3.2: Web可視化
-  - [x] axum Webサーバー
-  - [x] Three.js + force-graph-3d統合
-  - [x] インタラクティブUI
-  - [x] リアルタイム統計表示
-  - [x] ノード詳細パネル
-  - [x] ダークテーマUI
+**Phase 3: グラフ可視化**
+- [x] GraphML/DOT/JSONエクスポート
+- [x] 3D Web可視化（Three.js + force-graph-3d）
 
-### Phase 3 計画
-- [ ] Phase 3.3: Tauriデスクトップアプリ
-  - [ ] スタンドアロンGUI
-  - [ ] リアルタイム更新
-  - [ ] ファイルウォッチャー
-  - [ ] 設定の永続化
-  - [ ] 複数プロジェクト管理
+**Phase 4: データベース層**
+- [x] SQLite永続化
+- [x] ファイルハッシュベースの変更検知
+- [x] ファイル監視と自動更新
+- [x] 既存コマンドのDB統合
 
-### 将来の計画（多言語対応）
-- [ ] Rust, Python, Go, Java対応
-- [ ] 高度な依存関係解析
-- [ ] インクリメンタル更新
+**Phase 6: MCP統合（MVP！）**
+- [x] MCPサーバー実装（JSON-RPC 2.0、stdio）
+- [x] 9個のMCPツール（scan、search、stats、gather_context等）
+- [x] 依存関係を含むコンテキスト生成
+- [x] 一括変更（validate、preview、apply）
+- [x] 依存グラフを使用したImport検証
+- [x] タイムスタンプ付き自動バックアップ
+- [x] 統合テスト
+
+### 次のステップ
+
+**短期:**
+- 実運用でのフィードバック収集
+- エラーハンドリングの改善
+- パフォーマンス最適化
+
+**中期:**
+- TypeScript型チェック統合
+- ESLint統合
+- テスト自動実行
+
+**長期:**
+- 多言語対応（JavaScript、Python、Rust）
+- 変更履歴のWeb UI
+- 他のLLMエージェント対応（Claude、ChatGPT）
 
 ## テスト
 

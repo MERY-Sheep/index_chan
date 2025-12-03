@@ -1,12 +1,14 @@
 // Test cases for dead code detection accuracy
 
 // Case 1: Definitely safe to delete - old deprecated function
+// @ts-ignore - index-chan: Test file - may be used in tests
 function oldDeprecatedFunction() {
     // This was replaced 2 years ago
     return "old implementation";
 }
 
 // Case 2: Keep for future - WIP feature
+// @ts-ignore - index-chan: Test file - may be used in tests
 function futureFeature() {
     // TODO: Implement this next week
     // Part of issue #123
@@ -34,6 +36,7 @@ export function publicAPI() {
     return internalHelper();
 }
 
+// @ts-ignore - index-chan: Test file - may be used in tests
 // Case 6: Dead code - simple unused
 function simpleUnused() {
     return 42;

@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use std::fs;
 use std::io::{self, Write};
+use std::path::Path;
 
 use crate::detector::{DeadCode, SafetyLevel};
+use crate::backup::{BackupManager, ChangeType};
 
 pub struct Cleaner {
     dry_run: bool,
@@ -20,10 +22,23 @@ impl Cleaner {
     }
 
     pub fn clean(&self, dead_code: &[DeadCode]) -> Result<CleanResult> {
+        self.clean_with_backup(dead_code, None)
+    }
+
+    pub fn clean_with_backup(&self, dead_code: &[DeadCode], project_root: Option<&Path>) -> Result<CleanResult> {
         let mut result = CleanResult {
             deleted_count: 0,
             skipped_count: 0,
             deleted_lines: 0,
+        };
+
+        // バックアップマネージャーとマニフェストを準備
+        let (backup_manager, backup_dir, mut manifest) = if !self.dry_run && project_root.is_some() {
+            let manager = BackupManager::new(project_root.unwrap());
+            let (dir, manifest) = manager.create_backup_dir("clean")?;
+            (Some(manager), Some(dir), Some(manifest))
+        } else {
+            (None, None, None)
         };
 
         for dc in dead_code {
@@ -39,6 +54,18 @@ impl Cleaner {
                 continue;
             }
 
+            // バックアップを作成
+            if let (Some(ref manager), Some(ref backup_dir), Some(ref mut manifest)) = 
+                (&backup_manager, &backup_dir, &mut manifest) {
+                if dc.node.file_path.exists() {
+                    let backup_path = manager.backup_file(&dc.node.file_path, backup_dir)?;
+                    let relative_backup = backup_path.strip_prefix(backup_dir)
+                        .unwrap_or(&backup_path)
+                        .to_path_buf();
+                    manifest.add_change(ChangeType::Modified, dc.node.file_path.clone(), Some(relative_backup));
+                }
+            }
+
             // 削除実行
             if self.delete_code(dc)? {
                 result.deleted_count += 1;
@@ -46,6 +73,12 @@ impl Cleaner {
             } else {
                 result.skipped_count += 1;
             }
+        }
+
+        // マニフェストを保存
+        if let (Some(ref backup_dir), Some(manifest)) = (&backup_dir, manifest) {
+            manifest.save(backup_dir)?;
+            println!("\n📦 バックアップを作成しました: {}", backup_dir.display());
         }
 
         Ok(result)

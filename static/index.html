@@ -155,6 +155,109 @@
         .controls button:hover {
             background: #3daa82;
         }
+        
+        #filter-panel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 46, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #16213e;
+            min-width: 500px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #filter-panel h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #4ecca3;
+        }
+        
+        .filter-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #filter-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #16213e;
+            border-radius: 5px;
+            background: #16213e;
+            color: #eee;
+            font-size: 14px;
+        }
+        
+        #filter-input:focus {
+            outline: none;
+            border-color: #4ecca3;
+        }
+        
+        .filter-btn {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background: #3daa82;
+        }
+        
+        .filter-btn.secondary {
+            background: #93b5c6;
+        }
+        
+        .filter-btn.secondary:hover {
+            background: #7a9aaa;
+        }
+        
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-filter-btn {
+            background: #16213e;
+            color: #93b5c6;
+            border: 1px solid #93b5c6;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .quick-filter-btn:hover {
+            background: #93b5c6;
+            color: #1a1a2e;
+        }
+        
+        #filter-stats {
+            margin-top: 15px;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        #filter-stats .stat-line {
+            margin: 5px 0;
+        }
+        
+        #filter-stats .highlight {
+            color: #4ecca3;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -165,6 +268,31 @@
     </div>
     
     <div id="graph-container"></div>
+    
+    <div id="filter-panel">
+        <h2>🔍 グラフフィルター</h2>
+        <div class="filter-input-group">
+            <input type="text" id="filter-input" placeholder="例: LLM関連、scanner.rs、デッドコード">
+            <button class="filter-btn" onclick="applyFilter()">適用</button>
+            <button class="filter-btn secondary" onclick="clearFilter()">クリア</button>
+        </div>
+        <div class="quick-filters">
+            <button class="quick-filter-btn" onclick="quickFilter('dead-code')">🗑️ デッドコードのみ</button>
+            <button class="quick-filter-btn" onclick="quickFilter('llm')">🤖 LLM関連</button>
+            <button class="quick-filter-btn" onclick="quickFilter('scanner')">📂 Scanner関連</button>
+            <button class="quick-filter-btn" onclick="quickFilter('database')">💾 Database関連</button>
+        </div>
+        <div id="filter-stats">
+            <div class="stat-line">
+                フィルター: <span class="highlight" id="filter-query">-</span>
+            </div>
+            <div class="stat-line">
+                表示中: <span class="highlight" id="filtered-nodes">-</span> ノード / 
+                <span class="highlight" id="filtered-edges">-</span> エッジ
+                （全体: <span id="total-nodes">-</span> / <span id="total-edges">-</span>）
+            </div>
+        </div>
+    </div>
     
     <div id="info-panel">
         <h2>📊 グラフ統計</h2>
@@ -222,6 +350,8 @@
     <script>
         let graph;
         let isPaused = false;
+        let originalGraphData = null;
+        let currentGraphData = null;
         
         async function loadGraph() {
             try {
@@ -250,11 +380,12 @@
                         type: edge.edge_type
                     }));
                 
+                // Store original data
+                originalGraphData = { nodes, links };
+                currentGraphData = { nodes, links };
+                
                 // Update stats
-                document.getElementById('node-count').textContent = nodes.length;
-                document.getElementById('edge-count').textContent = links.length;
-                document.getElementById('unused-count').textContent = 
-                    nodes.filter(n => !n.used).length;
+                updateStats(nodes, links);
                 
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
@@ -313,6 +444,133 @@
                     event.target.textContent = '⏸️ 一時停止';
                 }
             }
+        }
+        
+        function updateStats(nodes, links) {
+            document.getElementById('node-count').textContent = nodes.length;
+            document.getElementById('edge-count').textContent = links.length;
+            document.getElementById('unused-count').textContent = 
+                nodes.filter(n => !n.used).length;
+        }
+        
+        async function applyFilter() {
+            const query = document.getElementById('filter-input').value.trim();
+            if (!query) {
+                alert('フィルタークエリを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        include_dependencies: true,
+                        use_llm: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('フィルタリングに失敗しました');
+                }
+                
+                const result = await response.json();
+                applyFilteredGraph(result.graph, result.stats);
+                
+            } catch (error) {
+                console.error('フィルタリングエラー:', error);
+                alert('フィルタリングに失敗しました: ' + error.message);
+            }
+        }
+        
+        async function quickFilter(type) {
+            try {
+                let response;
+                
+                if (type === 'dead-code') {
+                    response = await fetch('/api/filter/dead-code');
+                } else {
+                    // Use keywords filter
+                    response = await fetch(`/api/filter/keywords?keywords=${type}&include_dependencies=true`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error('フィルタリングに失敗しました');
+                }
+                
+                const result = await response.json();
+                applyFilteredGraph(result.graph, result.stats);
+                
+            } catch (error) {
+                console.error('フィルタリングエラー:', error);
+                alert('フィルタリングに失敗しました: ' + error.message);
+            }
+        }
+        
+        function applyFilteredGraph(filteredGraph, stats) {
+            // Convert to force-graph format
+            const nodes = Object.entries(filteredGraph.nodes).map(([id, node]) => ({
+                id: parseInt(id),
+                name: node.name,
+                type: node.node_type,
+                file: node.file_path,
+                lines: node.line_range,
+                exported: node.is_exported,
+                used: node.is_used,
+                color: node.is_used ? '#4ecca3' : '#e74c3c'
+            }));
+            
+            const links = filteredGraph.edges
+                .filter(edge => 
+                    filteredGraph.nodes[edge.from] && filteredGraph.nodes[edge.to]
+                )
+                .map(edge => ({
+                    source: edge.from,
+                    target: edge.to,
+                    type: edge.edge_type
+                }));
+            
+            currentGraphData = { nodes, links };
+            
+            // Update graph
+            if (graph) {
+                graph.graphData(currentGraphData);
+            }
+            
+            // Update stats
+            updateStats(nodes, links);
+            
+            // Show filter stats
+            const filterStatsPanel = document.getElementById('filter-stats');
+            filterStatsPanel.style.display = 'block';
+            document.getElementById('filter-query').textContent = stats.filter_query;
+            document.getElementById('filtered-nodes').textContent = stats.filtered_nodes;
+            document.getElementById('filtered-edges').textContent = stats.filtered_edges;
+            document.getElementById('total-nodes').textContent = stats.original_nodes;
+            document.getElementById('total-edges').textContent = stats.original_edges;
+        }
+        
+        function clearFilter() {
+            if (!originalGraphData) {
+                return;
+            }
+            
+            // Restore original graph
+            currentGraphData = originalGraphData;
+            
+            if (graph) {
+                graph.graphData(currentGraphData);
+            }
+            
+            // Update stats
+            updateStats(currentGraphData.nodes, currentGraphData.links);
+            
+            // Hide filter stats
+            document.getElementById('filter-stats').style.display = 'none';
+            document.getElementById('filter-input').value = '';
         }
         
         // Load graph on page load

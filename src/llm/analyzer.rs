@@ -1,4 +1,4 @@
-use super::{LLMConfig, LLMModel};
+use super::{GeminiClient, LLMConfig};
 use crate::graph::CodeNode;
 use anyhow::{Context as AnyhowContext, Result};
 use serde::{Deserialize, Serialize};
@@ -21,33 +21,36 @@ pub enum AnalysisCategory {
 }
 
 pub struct LLMAnalyzer {
-    model: Option<LLMModel>,
+    client: Option<GeminiClient>,
     config: LLMConfig,
 }
 
 impl LLMAnalyzer {
     pub fn new(config: LLMConfig, enable_llm: bool) -> Result<Self> {
-        let model = if enable_llm {
-            Some(LLMModel::new(config.clone())?)
+        let client = if enable_llm {
+            // 環境変数からAPIキーを取得
+            let api_key = std::env::var("GEMINI_API_KEY")
+                .context("GEMINI_API_KEY環境変数が設定されていません")?;
+            Some(GeminiClient::new(api_key)?)
         } else {
             None
         };
 
-        Ok(Self { model, config })
+        Ok(Self { client, config })
     }
 
-    pub fn analyze(&mut self, node: &CodeNode, context: &str) -> Result<LLMAnalysis> {
-        if self.model.is_some() {
-            self.analyze_with_llm(node, context)
+    pub async fn analyze(&self, node: &CodeNode, context: &str) -> Result<LLMAnalysis> {
+        if self.client.is_some() {
+            self.analyze_with_llm(node, context).await
         } else {
             // Fallback to rule-based analysis
             Ok(self.analyze_rule_based(node))
         }
     }
 
-    fn analyze_with_llm(&mut self, node: &CodeNode, context: &str) -> Result<LLMAnalysis> {
+    async fn analyze_with_llm(&self, node: &CodeNode, context: &str) -> Result<LLMAnalysis> {
         let prompt = self.build_prompt(node, context);
-        let response = self.model.as_mut().unwrap().generate(&prompt)?;
+        let response = self.client.as_ref().unwrap().generate(&prompt).await?;
 
         // Parse LLM response
         self.parse_llm_response(&response)

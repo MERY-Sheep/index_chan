@@ -285,10 +285,12 @@ pub struct CallInfo {
 }
 
 // Legacy TypeScriptParser for backward compatibility
+#[allow(dead_code)]
 pub struct TypeScriptParser {
     inner: CodeParser,
 }
 
+#[allow(dead_code)]
 impl TypeScriptParser {
     pub fn new() -> Result<Self> {
         Ok(Self {

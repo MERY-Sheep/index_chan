@@ -1,0 +1,30 @@
+# index-chan ignore patterns
+# Similar to .gitignore syntax
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+target/
+out/
+
+# Test files (optional - uncomment if you want to skip tests)
+# *.test.ts
+# *.spec.ts
+# __tests__/
+# __mocks__/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log

@@ -16,6 +16,12 @@ Project vision and concept document. Describes the overall goals, target users, 
 - Target users and use cases
 - Development roadmap
 
+**Status:** 🎉 **MVP Achieved!** (Phase 6 Complete)
+- 9 MCP tools for LLM agents
+- Context generation with dependencies
+- Batch changes with validation
+- Import validation (prevents hallucinations)
+
 ### [DESIGN.md](DESIGN.md) | [日本語版](DESIGN.ja.md)
 Technical design document. Details the system architecture, data models, and implementation approach.
 
@@ -24,8 +30,14 @@ Technical design document. Details the system architecture, data models, and imp
 - Data models (nodes, edges, graphs)
 - Core features (analysis, search, LLM interface)
 - Dead code detection algorithms
-- API design (REST API and CLI)
+- API design (MCP and CLI)
 - Performance optimization strategies
+
+**Latest Updates:**
+- MCP server implementation (JSON-RPC 2.0, stdio)
+- Context generation with dependency traversal
+- Batch change validation and application
+- Automatic backup with timestamps
 
 ## Reading Order
 
@@ -74,6 +86,12 @@ MIT License - See [LICENSE](../LICENSE) for details.
 - ターゲットユーザーとユースケース
 - 開発ロードマップ
 
+**状況:** 🎉 **MVP達成！**（Phase 6完了）
+- LLMエージェント向け9個のMCPツール
+- 依存関係を含むコンテキスト生成
+- 検証付き一括変更
+- Import検証（ハルシネーション防止）
+
 ### [DESIGN.ja.md](DESIGN.ja.md) | [English](DESIGN.md)
 技術設計ドキュメント。システムアーキテクチャ、データモデル、実装アプローチの詳細を説明します。
 
@@ -82,8 +100,14 @@ MIT License - See [LICENSE](../LICENSE) for details.
 - データモデル（ノード、エッジ、グラフ）
 - コア機能（解析、検索、LLMインターフェース）
 - デッドコード検出アルゴリズム
-- API設計（REST APIとCLI）
+- API設計（MCPとCLI）
 - パフォーマンス最適化戦略
+
+**最新の更新:**
+- MCPサーバー実装（JSON-RPC 2.0、stdio）
+- 依存関係トラバーサルを含むコンテキスト生成
+- 一括変更の検証と適用
+- タイムスタンプ付き自動バックアップ
 
 ## 読む順序
 

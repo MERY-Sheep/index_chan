@@ -11,6 +11,7 @@ function helperFunction() {
 
 // Dead code - not used anywhere
 // @ts-ignore - index-chan: Test file - may be used in tests
+// @ts-ignore - index-chan: Test file - may be used in tests
 function deadFunction() {
     console.log("This is dead code");
 }
@@ -26,6 +27,7 @@ class MyClass {
         console.log("Used");
     }
     
+// @ts-ignore - index-chan: Test file - may be used in tests
 // @ts-ignore - index-chan: Test file - may be used in tests
     deadMethod() {
         console.log("Dead");

@@ -5,42 +5,65 @@
   
   [日本語](README.ja.md) | English
   
-  Dead code detection CLI for TypeScript projects (Phase 1)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
+  
+  Code analysis and modification tool for LLM agents (Phase 6 Complete - MVP Achieved!)
 </div>
 
 ## Overview
 
-**Current Features (Phase 1):**
-index-chan is a CLI tool that detects and safely removes unused code (dead code) in TypeScript projects using AST analysis and LLM-powered semantic understanding.
+**🎉 MVP Achieved! (Phase 6 Complete - v0.3.0)**
 
-**Future Vision:**
-The ultimate goal is to build a "Code Dependency Graph Search System" that combines dependency graphs with vector search. This will be a next-generation development support tool that enables LLMs to understand and edit code with accurate context. See [docs/VISION.md](docs/VISION.md) for details.
+index-chan is a code analysis and modification tool designed for LLM agents (Kiro, Cursor, etc.). It provides 9 MCP (Model Context Protocol) tools that enable LLMs to understand and safely modify code.
 
-**Currently at Phase 1 (Dead Code Detection) stage.**
+**Key Features:**
+- **Dead Code Detection**: Automatically detect unused code
+- **Context Generation**: Gather functions with dependencies
+- **Batch Changes**: Validate, preview, and apply code changes safely
+- **Import Validation**: Prevent LLM hallucinations using dependency graphs
+- **Automatic Backup**: Timestamped backups for safety
+
+**Architecture:**
+```
+LLM Agent (Kiro/Cursor)
+    ↓ MCP Protocol
+index-chan MCP Server
+    ↓ Dependency Graph
+TypeScript Project
+```
 
 ## Features
 
-- TypeScript AST parsing with tree-sitter
-- Dependency graph construction
-- Dead code detection (unused functions, classes)
-- Safety level evaluation (definitely safe / probably safe / needs review)
-- Interactive and automatic deletion modes
-- Annotation feature (auto-add suppression comments)
-- **🆕 LLM Integration** (Phase 1.5 ✅ Complete)
-  - High-precision analysis with Qwen2.5-Coder-1.5B
-  - Automatic detection of "planned for future use" code
-  - Identification of experimental features and WIP
-  - Fully local execution (privacy-preserving)
-  - Meaningful responses in Japanese
-- **🔍 Code Search** (Phase 2 🚧 In Progress)
-  - Vector-based semantic search
-  - Dependency graph-based related code retrieval
-  - Smart context generation
-- **💬 Conversation Graph** (Phase 2 🚧 In Progress)
-  - Chat history analysis
-  - Automatic topic detection
-  - Token reduction (40-60% target)
-- **🌐 Internationalization** (CLI output in English)
+### MCP Tools (Phase 6 ✅ Complete)
+
+**9 MCP tools for LLM agents:**
+
+**Basic Features:**
+1. **scan**: Dead code detection
+2. **search**: Code search (requires indexing)
+3. **stats**: Project statistics
+
+**Context Generation:**
+4. **gather_context**: Gather functions with dependencies
+5. **get_dependencies**: Get function dependencies
+6. **get_dependents**: Get function dependents
+
+**Batch Changes:**
+7. **validate_changes**: Validate code changes
+8. **preview_changes**: Preview changes with diff
+9. **apply_changes**: Apply validated changes safely
+
+### Core Features
+
+- **TypeScript AST parsing** with tree-sitter
+- **Dependency graph** construction and analysis
+- **Dead code detection** (unused functions, classes)
+- **Safety level evaluation** (definitely safe / probably safe / needs review)
+- **Interactive and automatic** deletion modes
+- **Annotation feature** (auto-add suppression comments)
+- **Import validation** using dependency graphs (prevents LLM hallucinations)
+- **Automatic backup** with timestamps
 
 ## Installation
 
@@ -48,7 +71,64 @@ The ultimate goal is to build a "Code Dependency Graph Search System" that combi
 cargo install --path .
 ```
 
-## Usage
+## Quick Start
+
+### For LLM Agents (Kiro/Cursor)
+
+**1. Build index-chan:**
+```bash
+cargo build --release
+```
+
+**2. Configure MCP in Kiro:**
+
+Edit `~/.kiro/settings/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "index-chan": {
+      "command": "/path/to/index-chan/target/release/index-chan",
+      "args": ["mcp-server"],
+      "disabled": false,
+      "autoApprove": [
+        "scan",
+        "stats",
+        "search",
+        "gather_context",
+        "get_dependencies",
+        "get_dependents"
+      ]
+    }
+  }
+}
+```
+
+**3. Use from LLM:**
+```
+User: "Add rate limiting to the authentication function"
+
+LLM: index-chan.gather_context({
+       directory: ".",
+       entry_point: "authenticateUser",
+       depth: 2
+     })
+     → Gets related code
+
+LLM: Modifies code
+
+LLM: index-chan.validate_changes({...})
+     → Validates changes
+
+LLM: index-chan.preview_changes({...})
+     → Shows diff
+
+User: "Apply it"
+
+LLM: index-chan.apply_changes({...})
+     → Applied with backup
+```
+
+## CLI Usage
 
 ### Scan (Detection Only)
 
@@ -193,9 +273,7 @@ LLM mode uses Qwen2.5-Coder-1.5B for high-precision semantic analysis.
 
 ## Development Status and Roadmap
 
-### Current Position: Phase 2 (Search + Conversation Graph) In Progress 🚧
-
-This project is being developed in stages:
+### 🎉 MVP Achieved! (Phase 6 Complete)
 
 **Phase 1: Dead Code Detection CLI** ✅ Complete
 - TypeScript analysis and dependency graph construction
@@ -205,56 +283,90 @@ This project is being developed in stages:
 - High-precision analysis with local LLM
 - Identification of "planned for future use" code
 
-**Phase 2: Search + Conversation Graph** 🚧 In Progress
+**Phase 2: Search + Conversation Graph** ✅ Complete
 - Vector-based code search
 - Conversation graph for chat history
-- Token reduction (40-60% target)
-- Python support
+- Token reduction (39.5-60% achieved)
 
-**Phase 3: TBD** (To be decided after Phase 2)
-- Direction will be determined based on user feedback
-- Options: Advanced editing, Enterprise features, Custom LLM, etc.
+**Phase 3: Graph Visualization** ✅ Complete
+- GraphML/DOT/JSON export
+- 3D web visualization
 
-See [docs/VISION.md](docs/VISION.md) for detailed vision.
+**Phase 4: Database Layer** ✅ Complete
+- SQLite persistence
+- File watching and auto-update
 
-### Phase 1 Completed ✅
+**Phase 6: MCP Integration** ✅ Complete (MVP!)
+- 9 MCP tools for LLM agents
+- Context generation with dependencies
+- Batch changes with validation
+- Import validation (prevents hallucinations)
+- Automatic backup
+
+**Phase 5: Tauri Desktop App** ❄️ Frozen
+- Postponed to focus on CLI/MCP
+
+See [docs/VISION.md](docs/VISION.md) for detailed vision and [Doc/MVP/MVP_ロードマップ.md](Doc/MVP/MVP_ロードマップ.md) for Japanese roadmap.
+
+### Completed Phases ✅
+
+**Phase 1: Dead Code Detection**
 - [x] TypeScript analysis (tree-sitter)
 - [x] Dependency graph construction
 - [x] Dead code detection
 - [x] Deletion features (interactive/auto)
 - [x] Annotation features
 
-### Phase 1.5 Completed ✅
+**Phase 1.5: LLM Integration**
 - [x] LLM integration (Qwen2.5-Coder-1.5B)
 - [x] Local inference
 - [x] Context collection (Git history)
 - [x] High-precision analysis
 
-### Phase 1.5 Improvements Planned
-- [ ] Accuracy validation on real projects
-- [ ] Prompt optimization
-- [ ] Enhanced error handling
+**Phase 2: Search + Conversation Graph**
+- [x] Vector search foundation
+- [x] Conversation graph foundation
+- [x] CLI integration
+- [x] Embedding model integration (BERT with Candle)
+- [x] Topic detection
+- [x] Related message search
+- [x] Token reduction (39.5-60% achieved)
 
-### Phase 2 In Progress 🚧
-- [x] Vector search foundation (Week 1)
-- [x] Conversation graph foundation (Week 1)
-- [x] CLI integration (Week 1)
-- [x] Embedding model integration (Week 2) ✅
-  - BERT model with Candle
-  - Mean pooling + L2 normalization
-  - Fallback mode (simple hash)
-  - test-embedding command
-- [ ] Topic detection improvement (Week 3-4)
-- [ ] Python support (Week 11-12)
-- [ ] VSCode extension (Optional)
+**Phase 3: Graph Visualization**
+- [x] GraphML/DOT/JSON export
+- [x] 3D web visualization (Three.js + force-graph-3d)
 
-### Phase 3 Planned (TBD)
-- Direction to be determined after Phase 2 completion
-- Options under consideration:
-  - Advanced editing with conversation graph
-  - Enterprise features
-  - Custom LLM training
-  - Enhanced IDE integration
+**Phase 4: Database Layer**
+- [x] SQLite persistence
+- [x] File hash-based change detection
+- [x] File watching and auto-update
+- [x] Database integration for existing commands
+
+**Phase 6: MCP Integration (MVP!)**
+- [x] MCP server implementation (JSON-RPC 2.0, stdio)
+- [x] 9 MCP tools (scan, search, stats, gather_context, etc.)
+- [x] Context generation with dependencies
+- [x] Batch changes (validate, preview, apply)
+- [x] Import validation using dependency graphs
+- [x] Automatic backup with timestamps
+- [x] Integration testing
+
+### Next Steps
+
+**Short-term:**
+- Real-world usage and feedback collection
+- Error handling improvements
+- Performance optimization
+
+**Mid-term:**
+- TypeScript type checking integration
+- ESLint integration
+- Automatic test execution
+
+**Long-term:**
+- Multi-language support (JavaScript, Python, Rust)
+- Web UI for change history
+- Support for other LLM agents (Claude, ChatGPT)
 
 ## Testing
 

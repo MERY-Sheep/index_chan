@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::graph::{ConversationGraph, Topic};
-use crate::llm::{LLMConfig, LLMModel};
+use crate::llm::GeminiClient;
 
 /// Word type for Japanese keyword extraction
 #[derive(Debug, Clone, PartialEq)]
@@ -31,7 +31,7 @@ pub struct TopicInfo {
 /// Topic detector
 pub struct TopicDetector {
     min_cluster_size: usize,
-    llm_model: Option<Box<LLMModel>>,
+    gemini_client: Option<GeminiClient>,
 }
 
 impl TopicDetector {
@@ -39,38 +39,38 @@ impl TopicDetector {
     pub fn new() -> Self {
         Self {
             min_cluster_size: 2, // Lower threshold for small conversations
-            llm_model: None,
+            gemini_client: None,
         }
     }
 
-    /// Create a new topic detector with LLM support
-    pub fn with_llm(config: LLMConfig) -> Result<Self> {
-        let llm_model = LLMModel::new(config).ok().map(Box::new);
+    /// Create a new topic detector with Gemini support
+    pub fn with_gemini(api_key: String) -> Result<Self> {
+        let gemini_client = GeminiClient::new(api_key).ok();
         
         Ok(Self {
             min_cluster_size: 2,
-            llm_model,
+            gemini_client,
         })
     }
 
     /// Detect topics in conversation graph
-    pub fn detect_topics(&mut self, graph: &mut ConversationGraph) -> Result<()> {
-        if self.llm_model.is_some() {
-            self.detect_topics_with_llm(graph)
+    pub async fn detect_topics(&self, graph: &mut ConversationGraph) -> Result<()> {
+        if self.gemini_client.is_some() {
+            self.detect_topics_with_gemini(graph).await
         } else {
             self.detect_topics_keyword_based(graph)
         }
     }
 
-    /// Detect topics using LLM
-    fn detect_topics_with_llm(&mut self, graph: &mut ConversationGraph) -> Result<()> {
+    /// Detect topics using Gemini
+    async fn detect_topics_with_gemini(&self, graph: &mut ConversationGraph) -> Result<()> {
         let prompt = self.build_topic_prompt(graph);
         
-        let response = self.llm_model.as_mut().unwrap().generate(&prompt)?;
+        let response = self.gemini_client.as_ref().unwrap().generate(&prompt).await?;
         
         let analysis = self.parse_topic_response(&response)?;
         
-        // Create topics from LLM analysis
+        // Create topics from Gemini analysis
         for (topic_id, topic_info) in analysis.topics.iter().enumerate() {
             let message_ids: Vec<String> = topic_info.message_indices
                 .iter()
