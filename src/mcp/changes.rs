@@ -337,24 +337,48 @@ impl ChangeManager {
 
         for change in changes {
             let file_path = self.project_dir.join(&change.file_path);
-            
-            let original = if let Some(orig) = &change.original_content {
-                orig.clone()
-            } else if file_path.exists() {
-                std::fs::read_to_string(&file_path)?
+
+            // Handle partial vs full file changes
+            let (original, modified) = if let (Some(start), Some(end)) = (change.start_line, change.end_line) {
+                // Partial update: extract only affected lines
+                let full_content = if file_path.exists() {
+                    std::fs::read_to_string(&file_path)?
+                } else {
+                    String::new()
+                };
+                let lines: Vec<&str> = full_content.lines().collect();
+                let start_idx = start.saturating_sub(1);
+                let end_idx = end.min(lines.len());
+                let original_section = lines[start_idx..end_idx].join("\n");
+                (original_section, change.modified_content.clone())
             } else {
-                String::new()
+                // Full file replacement
+                let original = if let Some(orig) = &change.original_content {
+                    orig.clone()
+                } else if file_path.exists() {
+                    std::fs::read_to_string(&file_path)?
+                } else {
+                    String::new()
+                };
+                (original, change.modified_content.clone())
             };
 
-            let diff = self.generate_diff(&original, &change.modified_content);
+            let diff = self.generate_diff(&original, &modified);
             let (additions, deletions) = self.count_changes(&diff);
 
             total_additions += additions;
             total_deletions += deletions;
 
+            // Add line range info if partial update
+            let diff_header = if let (Some(start), Some(end)) = (change.start_line, change.end_line) {
+                format!("@@ Lines {}-{} @@\n{}", start, end, diff)
+            } else {
+                diff
+            };
+
             diffs.push(FileDiff {
                 file_path: change.file_path.clone(),
-                diff,
+                diff: diff_header,
                 additions,
                 deletions,
             });

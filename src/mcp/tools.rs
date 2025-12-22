@@ -1,8 +1,8 @@
 // MCP Tool Definitions
 // index-chanが提供するツール群
 
-use serde_json::json;
 use crate::mcp::protocol::ToolDefinition;
+use serde_json::json;
 
 /// Get all available tool definitions
 pub fn get_tool_definitions() -> Vec<ToolDefinition> {
@@ -29,6 +29,10 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
             input_schema: json!({
                 "type": "object",
                 "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "Project directory"
+                    },
                     "query": {
                         "type": "string",
                         "description": "Search query"
@@ -57,11 +61,11 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["directory"]
             }),
         },
-
         // gather_context tool (Phase 6 core feature)
         ToolDefinition {
             name: "gather_context".to_string(),
-            description: "Gather code context with dependencies for a specific function or query".to_string(),
+            description: "Gather code context with dependencies for a specific function or query"
+                .to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -87,6 +91,12 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
                         "enum": ["full", "skeleton"],
                         "description": "Output mode: full (complete code) or skeleton (signatures only)",
                         "default": "full"
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["standard", "llm_edit"],
+                        "description": "Output format: standard (comments) or llm_edit (<<<FILE>>> markers for batch editing)",
+                        "default": "standard"
                     }
                 },
                 "required": ["directory"]
@@ -267,6 +277,120 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
                 },
                 "required": ["directory", "changes"]
             }),
-        }
+        },
+        // search_with_graph tool (Phase 7 GraphRAG)
+        ToolDefinition {
+            name: "search_with_graph".to_string(),
+            description:
+                "Search code with graph traversal - finds related files via dependency edges. Use semantic=true for AI-powered concept search."
+                    .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "Project directory"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search query (function name, concept, or natural language)"
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Number of initial matches to find",
+                        "default": 3
+                    },
+                    "graph_depth": {
+                        "type": "integer",
+                        "description": "How many dependency hops to traverse",
+                        "default": 2
+                    },
+                    "semantic": {
+                        "type": "boolean",
+                        "description": "Use AI embeddings for semantic search (requires first run to build cache)",
+                        "default": false
+                    },
+                    "filter_generic": {
+                        "type": "boolean",
+                        "description": "Filter out generic names like new, default, clone from results",
+                        "default": true
+                    }
+                },
+                "required": ["directory", "query"]
+            }),
+        },
+        // parse_llm_edits tool - Parse LLM output back into file changes
+        ToolDefinition {
+            name: "parse_llm_edits".to_string(),
+            description: "Parse LLM-edited content (from gather_context with format=llm_edit) into changes array for apply_changes".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "LLM output containing <<<FILE>>> blocks"
+                    }
+                },
+                "required": ["content"]
+            }),
+        },
+        // get_call_chain tool - Find path between two functions
+        ToolDefinition {
+            name: "get_call_chain".to_string(),
+            description: "Find the call chain (shortest path) from one function to another".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "Project directory"
+                    },
+                    "from": {
+                        "type": "string",
+                        "description": "Source function name"
+                    },
+                    "to": {
+                        "type": "string",
+                        "description": "Target function name"
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum search depth",
+                        "default": 10
+                    }
+                },
+                "required": ["directory", "from", "to"]
+            }),
+        },
+        // get_call_tree tool - Visualize call hierarchy
+        ToolDefinition {
+            name: "get_call_tree".to_string(),
+            description: "Get call tree showing all functions called by or calling a function".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "Project directory"
+                    },
+                    "function_name": {
+                        "type": "string",
+                        "description": "Function to analyze"
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "description": "How many levels to traverse",
+                        "default": 3
+                    },
+                    "direction": {
+                        "type": "string",
+                        "enum": ["callee", "caller"],
+                        "description": "callee = functions this calls, caller = functions that call this",
+                        "default": "callee"
+                    }
+                },
+                "required": ["directory", "function_name"]
+            }),
+        },
     ]
 }

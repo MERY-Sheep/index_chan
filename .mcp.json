@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "index-chan": {
+      "command": "C:/Work/index-chan/target/debug/index-chan.exe",
+      "args": ["mcp-server"]
+    }
+  }
+}

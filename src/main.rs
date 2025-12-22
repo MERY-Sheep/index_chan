@@ -10,28 +10,16 @@ use scanner::Scanner;
 #[cfg(feature = "db")]
 use graph::CodeGraph;
 
-mod annotator;
-mod backup;
-mod cleaner;
-mod conversation;
-mod database;
-mod detector;
-mod error_helper;
-mod exporter;
-mod filter;
-mod graph;
-mod llm;
-mod mcp;
-mod parser;
-mod reporter;
-mod scanner;
-mod search;
+use index_chan::{
+    annotator, backup, cleaner, conversation, detector, exporter, llm, mcp, reporter, scanner,
+    search,
+};
+
+#[cfg(feature = "db")]
+use index_chan::database;
 
 #[cfg(feature = "web")]
-mod web_server;
-
-#[cfg(feature = "web")]
-mod chat_server;
+use index_chan::{chat_server, web_server};
 
 #[derive(Parser)]
 #[command(name = "index-chan")]
@@ -123,7 +111,12 @@ enum Commands {
         directory: PathBuf,
 
         /// Output index file
-        #[arg(short, long, value_name = "FILE", default_value = ".index-chan/index.json")]
+        #[arg(
+            short,
+            long,
+            value_name = "FILE",
+            default_value = ".index-chan/index.json"
+        )]
         output: PathBuf,
     },
 
@@ -134,7 +127,12 @@ enum Commands {
         query: String,
 
         /// Index file to search
-        #[arg(short, long, value_name = "FILE", default_value = ".index-chan/index.json")]
+        #[arg(
+            short,
+            long,
+            value_name = "FILE",
+            default_value = ".index-chan/index.json"
+        )]
         index: PathBuf,
 
         /// Number of results to return
@@ -351,31 +349,22 @@ fn main() -> Result<()> {
                 #[cfg(feature = "db")]
                 {
                     // DBから読み込み
-                    let project_name = directory
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("project");
-                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+                    let db_path = directory.join(".index-chan").join("graph.db");
 
                     if !db_path.exists() {
                         eprintln!("❌ データベースが見つかりません: {}", db_path.display());
-                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        eprintln!(
+                            "💡 自動スキャンを実行するか、手動でスキャンしてください: index-chan scan {}",
+                            directory.display()
+                        );
                         return Ok(());
                     }
 
-                    println!("📂 データベースから読み込み中...");
                     let runtime = tokio::runtime::Runtime::new()?;
-                    let db = runtime.block_on(async {
-                        database::Database::open(&db_path).await
-                    })?;
-
-                    let project = runtime.block_on(async {
-                        db.get_or_create_project(&directory, project_name).await
-                    })?;
-
-                    // DBからグラフを再構築
                     runtime.block_on(async {
-                        load_graph_from_db(&db, project.id).await
+                        use index_chan::database::GraphDB;
+                        let db = GraphDB::new(&db_path).await?;
+                        db.load_graph().await
                     })?
                 }
                 #[cfg(not(feature = "db"))]
@@ -512,7 +501,12 @@ fn main() -> Result<()> {
             Ok(())
         }
 
-        Commands::Undo { directory, backup, list, force } => {
+        Commands::Undo {
+            directory,
+            backup,
+            list,
+            force,
+        } => {
             use backup::BackupManager;
 
             let backup_manager = BackupManager::new(&directory);
@@ -521,7 +515,7 @@ fn main() -> Result<()> {
                 // List available backups
                 println!("📦 利用可能なバックアップ:\n");
                 let backups = backup_manager.list_backups()?;
-                
+
                 if backups.is_empty() {
                     println!("バックアップが見つかりません");
                     return Ok(());
@@ -532,12 +526,15 @@ fn main() -> Result<()> {
                         .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("unknown");
-                    
+
                     if let Ok(manifest) = backup::BackupManifest::load(&backup_dir) {
                         println!("📅 {}", timestamp);
                         println!("   操作: {}", manifest.operation);
                         println!("   変更ファイル数: {}", manifest.changes.len());
-                        println!("   日時: {}", manifest.timestamp.format("%Y-%m-%d %H:%M:%S"));
+                        println!(
+                            "   日時: {}",
+                            manifest.timestamp.format("%Y-%m-%d %H:%M:%S")
+                        );
                         println!();
                     }
                 }
@@ -546,10 +543,16 @@ fn main() -> Result<()> {
 
             // Determine which backup to restore
             let backup_dir = if let Some(backup_name) = backup {
-                let path = directory.join(".index-chan").join("backups").join(&backup_name);
+                let path = directory
+                    .join(".index-chan")
+                    .join("backups")
+                    .join(&backup_name);
                 if !path.exists() {
                     eprintln!("❌ バックアップが見つかりません: {}", backup_name);
-                    eprintln!("💡 利用可能なバックアップを確認: index-chan undo {} --list", directory.display());
+                    eprintln!(
+                        "💡 利用可能なバックアップを確認: index-chan undo {} --list",
+                        directory.display()
+                    );
                     return Ok(());
                 }
                 path
@@ -575,7 +578,10 @@ fn main() -> Result<()> {
             // Load and display manifest
             let manifest = backup::BackupManifest::load(&backup_dir)?;
             println!("📋 操作: {}", manifest.operation);
-            println!("📅 日時: {}", manifest.timestamp.format("%Y-%m-%d %H:%M:%S"));
+            println!(
+                "📅 日時: {}",
+                manifest.timestamp.format("%Y-%m-%d %H:%M:%S")
+            );
             println!("📊 変更ファイル数: {}", manifest.changes.len());
             println!();
 
@@ -584,10 +590,10 @@ fn main() -> Result<()> {
                 use std::io::{self, Write};
                 print!("この操作を元に戻しますか？ (y/N): ");
                 io::stdout().flush()?;
-                
+
                 let mut input = String::new();
                 io::stdin().read_line(&mut input)?;
-                
+
                 if !input.trim().eq_ignore_ascii_case("y") {
                     println!("キャンセルしました");
                     return Ok(());
@@ -599,7 +605,7 @@ fn main() -> Result<()> {
 
             println!("\n✅ 復元完了");
             println!("   復元ファイル数: {}", result.restored_count);
-            
+
             if !result.failed_files.is_empty() {
                 println!("\n⚠️  復元に失敗したファイル:");
                 for file in &result.failed_files {
@@ -669,7 +675,7 @@ fn main() -> Result<()> {
 
             // Load index
             let mut index = search::CodeIndex::new()?;
-            
+
             if !index_path.exists() {
                 eprintln!("❌ Index file not found: {}", index_path.display());
                 eprintln!("💡 Create index first: index-chan index <directory>");
@@ -691,13 +697,19 @@ fn main() -> Result<()> {
             println!("📊 Found {} results:\n", results.len());
 
             for (i, result) in results.iter().enumerate() {
-                println!("{}. {} (score: {:.2})", i + 1, result.metadata.function_name, result.score);
-                println!("   📄 {}:{}:{}", 
+                println!(
+                    "{}. {} (score: {:.2})",
+                    i + 1,
+                    result.metadata.function_name,
+                    result.score
+                );
+                println!(
+                    "   📄 {}:{}:{}",
                     result.metadata.file_path.display(),
                     result.metadata.start_line,
                     result.metadata.end_line
                 );
-                
+
                 if context {
                     println!("   📝 Code:");
                     for line in result.metadata.code_snippet.lines().take(5) {
@@ -707,11 +719,14 @@ fn main() -> Result<()> {
                         println!("      ...");
                     }
                 }
-                
+
                 if !result.metadata.dependencies.is_empty() {
-                    println!("   🔗 Dependencies: {}", result.metadata.dependencies.join(", "));
+                    println!(
+                        "   🔗 Dependencies: {}",
+                        result.metadata.dependencies.join(", ")
+                    );
                 }
-                
+
                 println!();
             }
 
@@ -741,7 +756,7 @@ fn main() -> Result<()> {
             // TODO: async/await対応後に有効化
             // let topic_detector = conversation::TopicDetector::new();
             // topic_detector.detect_topics(&mut graph).await?;
-            
+
             println!("⚠️  トピック検出機能は現在実装中です");
             println!();
 
@@ -785,7 +800,7 @@ fn main() -> Result<()> {
             } else {
                 conversation::TopicDetector::new()
             };
-            
+
             // TODO: async/await対応後に有効化
             // topic_detector.detect_topics(&mut graph).await?;
             eprintln!("⚠️  トピック検出機能は現在実装中です");
@@ -807,7 +822,12 @@ fn main() -> Result<()> {
             Ok(())
         }
 
-        Commands::Related { file, query, top_k, context } => {
+        Commands::Related {
+            file,
+            query,
+            top_k,
+            context,
+        } => {
             println!("🔍 関連メッセージ検索: {}", file.display());
             println!("📝 クエリ: {}\n", query);
 
@@ -837,34 +857,38 @@ fn main() -> Result<()> {
             println!("📊 {}件の関連メッセージを発見:\n", related.len());
 
             for (i, msg) in related.iter().enumerate() {
-                println!("{}. [{}] {} (類似度: {:.3})", 
-                    i + 1, 
-                    msg.role, 
+                println!(
+                    "{}. [{}] {} (類似度: {:.3})",
+                    i + 1,
+                    msg.role,
                     msg.timestamp,
                     msg.similarity
                 );
-                
+
                 if let Some(topic_id) = &msg.topic_id {
                     if let Some(topic) = graph.topics.iter().find(|t| &t.id == topic_id) {
                         println!("   🏷️  トピック: {}", topic.name);
                     }
                 }
-                
+
                 println!("   💬 {}", msg.content);
-                
+
                 if context {
                     let context_msgs = graph.get_context_window(&msg.id, 1);
                     if context_msgs.len() > 1 {
                         println!("   📖 コンテキスト:");
                         for ctx_msg in context_msgs {
                             if ctx_msg.id != msg.id {
-                                println!("      [{}] {}", ctx_msg.role, 
-                                    ctx_msg.content.chars().take(60).collect::<String>());
+                                println!(
+                                    "      [{}] {}",
+                                    ctx_msg.role,
+                                    ctx_msg.content.chars().take(60).collect::<String>()
+                                );
                             }
                         }
                     }
                 }
-                
+
                 println!();
             }
 
@@ -877,9 +901,9 @@ fn main() -> Result<()> {
 
             Ok(())
         }
-        Commands::Export { 
-            directory, 
-            output, 
+        Commands::Export {
+            directory,
+            output,
             format,
             #[cfg(feature = "db")]
             use_db,
@@ -910,27 +934,24 @@ fn main() -> Result<()> {
                         .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("project");
-                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+                    let db_path = directory
+                        .join(".index-chan")
+                        .join(format!("{}.db", project_name));
 
                     if !db_path.exists() {
                         eprintln!("❌ データベースが見つかりません: {}", db_path.display());
-                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        eprintln!(
+                            "💡 プロジェクトを初期化してください: index-chan init {}",
+                            directory.display()
+                        );
                         return Ok(());
                     }
 
                     println!("📂 データベースから読み込み中...");
                     let runtime = tokio::runtime::Runtime::new()?;
-                    let db = runtime.block_on(async {
-                        database::Database::open(&db_path).await
-                    })?;
+                    let db = runtime.block_on(async { database::GraphDB::new(&db_path).await })?;
 
-                    let project = runtime.block_on(async {
-                        db.get_or_create_project(&directory, project_name).await
-                    })?;
-
-                    runtime.block_on(async {
-                        load_graph_from_db(&db, project.id).await
-                    })?
+                    runtime.block_on(async { db.load_graph().await })?
                 }
                 #[cfg(not(feature = "db"))]
                 {
@@ -972,7 +993,10 @@ fn main() -> Result<()> {
                 }
             }
 
-            println!("\n📄 ファイルサイズ: {} bytes", std::fs::metadata(&output)?.len());
+            println!(
+                "\n📄 ファイルサイズ: {} bytes",
+                std::fs::metadata(&output)?.len()
+            );
 
             Ok(())
         }
@@ -1008,27 +1032,24 @@ fn main() -> Result<()> {
                         .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("project");
-                    let db_path = directory.join(".index-chan").join(format!("{}.db", project_name));
+                    let db_path = directory
+                        .join(".index-chan")
+                        .join(format!("{}.db", project_name));
 
                     if !db_path.exists() {
                         eprintln!("❌ データベースが見つかりません: {}", db_path.display());
-                        eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                        eprintln!(
+                            "💡 プロジェクトを初期化してください: index-chan init {}",
+                            directory.display()
+                        );
                         return Ok(());
                     }
 
                     println!("📂 データベースから読み込み中...");
                     let runtime = tokio::runtime::Runtime::new()?;
-                    let db = runtime.block_on(async {
-                        database::Database::open(&db_path).await
-                    })?;
+                    let db = runtime.block_on(async { database::GraphDB::new(&db_path).await })?;
 
-                    let project = runtime.block_on(async {
-                        db.get_or_create_project(&directory, project_name).await
-                    })?;
-
-                    runtime.block_on(async {
-                        load_graph_from_db(&db, project.id).await
-                    })?
+                    runtime.block_on(async { db.load_graph().await })?
                 }
                 #[cfg(not(feature = "db"))]
                 {
@@ -1051,9 +1072,7 @@ fn main() -> Result<()> {
                 #[cfg(feature = "web")]
                 {
                     use std::process::Command;
-                    let _ = Command::new("cmd")
-                        .args(&["/C", "start", &url])
-                        .spawn();
+                    let _ = Command::new("cmd").args(&["/C", "start", &url]).spawn();
                 }
             }
 
@@ -1061,15 +1080,17 @@ fn main() -> Result<()> {
             #[cfg(feature = "web")]
             {
                 let runtime = tokio::runtime::Runtime::new()?;
-                runtime.block_on(async {
-                    web_server::server::start_server(graph, port).await
-                })?;
+                runtime.block_on(async { web_server::server::start_server(graph, port).await })?;
             }
 
             Ok(())
         }
         #[cfg(feature = "db")]
-        Commands::Init { directory, name, db_path } => {
+        Commands::Init {
+            directory,
+            name,
+            db_path,
+        } => {
             println!("🔧 プロジェクトを初期化中: {}", directory.display());
             println!();
 
@@ -1088,132 +1109,36 @@ fn main() -> Result<()> {
             });
 
             // データベースパスを決定
-            let db_path = db_path.unwrap_or_else(|| {
-                directory.join(".index-chan").join(format!("{}.db", project_name))
-            });
+            let db_path = db_path.unwrap_or_else(|| directory.join(".index-chan").join("graph.db"));
 
-            println!("📊 プロジェクト名: {}", project_name);
             println!("💾 データベース: {}", db_path.display());
             println!();
 
-            // データベースを開く
-            println!("💾 データベースを作成中...");
-            let runtime = tokio::runtime::Runtime::new()?;
-            let db = runtime.block_on(async {
-                database::Database::open(&db_path).await
-            })?;
-            println!("✅ データベース作成完了");
-            println!();
-
-            // プロジェクトを作成
-            let project = runtime.block_on(async {
-                db.get_or_create_project(&directory, &project_name).await
-            })?;
-            println!("📂 プロジェクトID: {}", project.id);
-            println!();
-
-            // ディレクトリ全体をスキャン
             println!("🔍 ディレクトリをスキャン中...");
             let mut scanner = Scanner::new()?;
             let graph = scanner.scan_directory(&directory)?;
-            
-            println!("✅ スキャン完了");
-            println!();
+            println!("✅ スキャン完了: {} nodes", graph.nodes.len());
 
-            // 各ファイルをデータベースに保存
             println!("💾 データベースに保存中...");
-            
-            // ファイルごとにグループ化
-            let mut files_map: std::collections::HashMap<PathBuf, Vec<usize>> = std::collections::HashMap::new();
-            for (node_id, node) in &graph.nodes {
-                files_map.entry(node.file_path.clone())
-                    .or_insert_with(Vec::new)
-                    .push(*node_id);
-            }
-
-            let mut processed_files = 0;
-            for (file_path, node_ids) in &files_map {
-                // ハッシュを計算
-                let hash = match database::Database::calculate_file_hash(file_path) {
-                    Ok(h) => h,
-                    Err(e) => {
-                        eprintln!("⚠️  ハッシュ計算エラー ({}): {}", file_path.display(), e);
-                        continue;
-                    }
-                };
-
-                // 言語を判定
-                let language = if file_path.extension().and_then(|s| s.to_str()) == Some("rs") {
-                    "rust"
-                } else {
-                    "typescript"
-                };
-
-                // ファイルをデータベースに追加
-                let file = runtime.block_on(async {
-                    db.upsert_file(project.id, file_path, language, &hash).await
-                })?;
-
-                // このファイルのノードだけを含むサブグラフを作成
-                let mut file_graph = CodeGraph::new();
-                for node_id in node_ids {
-                    if let Some(node) = graph.nodes.get(node_id) {
-                        file_graph.add_node(node.clone());
-                    }
+            let runtime = tokio::runtime::Runtime::new()?;
+            runtime.block_on(async {
+                use index_chan::database::GraphDB;
+                if let Some(parent) = db_path.parent() {
+                    std::fs::create_dir_all(parent)?;
                 }
-                
-                // このファイルに関連するエッジを追加
-                for edge in &graph.edges {
-                    if node_ids.contains(&edge.from) || node_ids.contains(&edge.to) {
-                        file_graph.add_edge(edge.clone());
-                    }
-                }
-
-                // グラフをデータベースに保存
-                runtime.block_on(async {
-                    db.save_graph(file.id, &file_graph).await
-                })?;
-
-                processed_files += 1;
-                if processed_files % 10 == 0 {
-                    print!(".");
-                    use std::io::Write;
-                    std::io::stdout().flush()?;
-                }
-            }
-
-            println!("\n✅ 保存完了");
-            println!();
-
-            // 統計を表示
-            let stats = runtime.block_on(async {
-                db.get_project_stats(project.id).await
+                let db = GraphDB::new(&db_path).await?;
+                db.save_graph(&graph).await?;
+                Ok::<_, anyhow::Error>(())
             })?;
-
-            println!("📊 プロジェクト統計:");
-            println!("  ファイル数: {}", stats.file_count);
-            println!("  関数数: {}", stats.function_count);
-            println!("  依存関係: {}", stats.dependency_count);
-            println!("  デッドコード: {} 個 ({:.1}%)", 
-                stats.dead_code_count,
-                if stats.function_count > 0 {
-                    (stats.dead_code_count as f64 / stats.function_count as f64) * 100.0
-                } else {
-                    0.0
-                }
-            );
-            println!();
-
-            println!("✅ セットアップ完了！");
-            println!();
-            println!("💡 次のステップ:");
-            println!("  index-chan stats {}    # 統計を表示", directory.display());
-            println!("  index-chan scan {}     # デッドコードをスキャン", directory.display());
+            println!("✅ 保存完了");
 
             Ok(())
         }
         #[cfg(feature = "db")]
-        Commands::Stats { directory, db_path } => {
+        Commands::Stats {
+            directory,
+            db_path: _,
+        } => {
             println!("📊 プロジェクト統計: {}", directory.display());
             println!();
 
@@ -1222,191 +1147,41 @@ fn main() -> Result<()> {
                 return Ok(());
             }
 
-            // プロジェクト名を取得
-            let project_name = directory
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("project");
-
-            // データベースパスを決定
-            let db_path = db_path.unwrap_or_else(|| {
-                directory.join(".index-chan").join(format!("{}.db", project_name))
-            });
+            // DBパス構築
+            let db_path = directory.join(".index-chan").join("graph.db");
 
             if !db_path.exists() {
                 eprintln!("❌ データベースが見つかりません: {}", db_path.display());
-                eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
+                eprintln!(
+                    "💡 自動スキャンを実行するか、手動でスキャンしてください: index-chan scan {}",
+                    directory.display()
+                );
                 return Ok(());
             }
 
-            // データベースを開く
             let runtime = tokio::runtime::Runtime::new()?;
-            let db = runtime.block_on(async {
-                database::Database::open(&db_path).await
+            let graph = runtime.block_on(async {
+                use index_chan::database::GraphDB;
+                let db = GraphDB::new(&db_path).await?;
+                db.load_graph().await
             })?;
 
-            // プロジェクトを取得
-            let project = runtime.block_on(async {
-                db.get_or_create_project(&directory, project_name).await
-            })?;
-
-            // 統計を取得
-            let stats = runtime.block_on(async {
-                db.get_project_stats(project.id).await
-            })?;
-
-            println!("📂 プロジェクト: {}", project.name);
-            println!("📅 作成日: {}", project.created_at.format("%Y-%m-%d %H:%M:%S"));
-            println!("📅 更新日: {}", project.updated_at.format("%Y-%m-%d %H:%M:%S"));
-            println!();
+            let dead_code = detect_dead_code(&graph);
 
             println!("📊 統計:");
-            println!("  ファイル数: {}", stats.file_count);
-            println!("  関数数: {}", stats.function_count);
-            println!("  依存関係: {}", stats.dependency_count);
-            println!();
-
-            println!("🗑️  デッドコード:");
-            println!("  未使用関数: {} 個", stats.dead_code_count);
-            if stats.function_count > 0 {
-                let percentage = (stats.dead_code_count as f64 / stats.function_count as f64) * 100.0;
-                println!("  割合: {:.1}%", percentage);
-            }
+            println!("  ノード数: {}", graph.nodes.len());
+            println!("  エッジ数: {}", graph.edges.len());
+            println!("  デッドコード: {} 個", dead_code.len());
 
             Ok(())
         }
         #[cfg(feature = "db")]
-        Commands::Watch { directory, db_path } => {
-            use notify_debouncer_full::{new_debouncer, notify::*, DebounceEventResult};
-            use std::time::Duration;
-
-            println!("👀 ファイル監視を開始: {}", directory.display());
-            println!();
-
-            if !directory.exists() {
-                eprintln!("❌ ディレクトリが見つかりません: {}", directory.display());
-                return Ok(());
-            }
-
-            // プロジェクト名を取得
-            let project_name = directory
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("project");
-
-            // データベースパスを決定
-            let db_path = db_path.unwrap_or_else(|| {
-                directory.join(".index-chan").join(format!("{}.db", project_name))
-            });
-
-            if !db_path.exists() {
-                eprintln!("❌ データベースが見つかりません: {}", db_path.display());
-                eprintln!("💡 プロジェクトを初期化してください: index-chan init {}", directory.display());
-                return Ok(());
-            }
-
-            println!("📂 監視中: {}", directory.display());
-            println!("💾 データベース: {}", db_path.display());
-            println!();
-
-            // データベースを開く
-            let runtime = tokio::runtime::Runtime::new()?;
-            let db = runtime.block_on(async {
-                database::Database::open(&db_path).await
-            })?;
-
-            // プロジェクトを取得
-            let project = runtime.block_on(async {
-                db.get_or_create_project(&directory, project_name).await
-            })?;
-
-            // ファイルウォッチャーを作成
-            let (tx, rx) = std::sync::mpsc::channel();
-            
-            let mut debouncer = new_debouncer(
-                Duration::from_secs(2),
-                None,
-                move |result: DebounceEventResult| {
-                    tx.send(result).unwrap();
-                },
-            )?;
-
-            // 監視を開始
-            debouncer.watcher().watch(
-                &directory,
-                RecursiveMode::Recursive,
-            )?;
-
-            println!("✅ 監視開始（Ctrl+Cで終了）");
-            println!();
-
-            // イベントループ
-            let mut scanner = Scanner::new()?;
-            
-            for result in rx {
-                match result {
-                    Ok(events) => {
-                        for event in events {
-                            for path in &event.paths {
-                                // TypeScriptまたはRustファイルのみ処理
-                                let ext = path.extension().and_then(|s| s.to_str());
-                                if ext != Some("ts") && ext != Some("tsx") && ext != Some("rs") {
-                                    continue;
-                                }
-
-                                let relative_path = path.strip_prefix(&directory).unwrap_or(&path);
-                                let timestamp = chrono::Local::now().format("%H:%M:%S");
-
-                                match event.kind {
-                                    EventKind::Create(_) => {
-                                        println!("[{}] 📄 追加: {}", timestamp, relative_path.display());
-                                        
-                                        // ファイルを解析
-                                        if let Err(e) = runtime.block_on(async {
-                                            process_file_change(&db, &mut scanner, project.id, &path, "typescript").await
-                                        }) {
-                                            eprintln!("   ❌ エラー: {}", e);
-                                        } else {
-                                            println!("   ✅ データベースを更新");
-                                        }
-                                    }
-                                    EventKind::Modify(_) => {
-                                        println!("[{}] 🔄 変更: {}", timestamp, relative_path.display());
-                                        
-                                        // ファイルを再解析
-                                        if let Err(e) = runtime.block_on(async {
-                                            process_file_change(&db, &mut scanner, project.id, &path, "typescript").await
-                                        }) {
-                                            eprintln!("   ❌ エラー: {}", e);
-                                        } else {
-                                            println!("   ✅ データベースを更新");
-                                        }
-                                    }
-                                    EventKind::Remove(_) => {
-                                        println!("[{}] 🗑️  削除: {}", timestamp, relative_path.display());
-                                        
-                                        // データベースから削除
-                                        if let Err(e) = runtime.block_on(async {
-                                            db.delete_file(project.id, &path).await
-                                        }) {
-                                            eprintln!("   ❌ エラー: {}", e);
-                                        } else {
-                                            println!("   ✅ データベースから削除");
-                                        }
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        }
-                    }
-                    Err(errors) => {
-                        for error in errors {
-                            eprintln!("⚠️  監視エラー: {:?}", error);
-                        }
-                    }
-                }
-            }
-
+        Commands::Watch {
+            directory: _,
+            db_path: _,
+        } => {
+            println!("⚠️ Watch機能は現在メンテナンス中です。");
+            println!("💡 代わりに定期的に index-chan scan を実行してください。");
             Ok(())
         }
 
@@ -1481,7 +1256,7 @@ fn main() -> Result<()> {
 
             // Webサーバーを起動
             println!("🌐 Webサーバーを起動中...");
-            
+
             if open {
                 let url = format!("http://127.0.0.1:{}", port);
                 println!("🌐 ブラウザを開いています: {}", url);
@@ -1490,13 +1265,9 @@ fn main() -> Result<()> {
                     .args(&["/C", "start", &url])
                     .spawn()?;
                 #[cfg(target_os = "macos")]
-                std::process::Command::new("open")
-                    .arg(&url)
-                    .spawn()?;
+                std::process::Command::new("open").arg(&url).spawn()?;
                 #[cfg(target_os = "linux")]
-                std::process::Command::new("xdg-open")
-                    .arg(&url)
-                    .spawn()?;
+                std::process::Command::new("xdg-open").arg(&url).spawn()?;
             }
 
             let runtime = tokio::runtime::Runtime::new()?;
@@ -1531,7 +1302,11 @@ fn main() -> Result<()> {
             } else if let Some(nid) = node_id {
                 // 特定のノードIDを含むプロンプトを表示
                 let prompts = history.get_prompts_with_node(&nid);
-                println!("🔍 ノードID '{}' を含むプロンプト: {} 件", nid, prompts.len());
+                println!(
+                    "🔍 ノードID '{}' を含むプロンプト: {} 件",
+                    nid,
+                    prompts.len()
+                );
                 println!();
 
                 for prompt in prompts {
@@ -1554,7 +1329,10 @@ fn main() -> Result<()> {
                     println!("   [システムプロンプト]");
                     println!("   {}", prompt.system_prompt);
                     println!();
-                    println!("   [会話履歴] ({} メッセージ)", prompt.conversation_history.len());
+                    println!(
+                        "   [会話履歴] ({} メッセージ)",
+                        prompt.conversation_history.len()
+                    );
                     for msg in &prompt.conversation_history {
                         println!("   {}: {}", msg.role, msg.content);
                     }
@@ -1568,17 +1346,42 @@ fn main() -> Result<()> {
             Ok(())
         }
 
-        Commands::Chat { directory, message } => {
-            run_chat(directory, message)
-        }
+        Commands::Chat { directory, message } => run_chat(directory, message),
 
         Commands::McpServer { directory } => {
             eprintln!("🔌 Starting MCP server (stdio mode)...");
-            if let Some(dir) = &directory {
-                eprintln!("📂 Project directory: {}", dir.display());
+            let project_dir = directory.unwrap_or_else(|| std::env::current_dir().unwrap());
+            eprintln!("📂 Project directory: {}", project_dir.display());
+
+            #[cfg(feature = "db")]
+            {
+                let db_path = project_dir.join(".index-chan").join("graph.db");
+                // Auto scan on startup if DB not exists
+                if !db_path.exists() {
+                    eprintln!("🔄 Performing startup scan...");
+                    let res: Result<()> = (|| {
+                        let mut scanner = Scanner::new()?;
+                        let graph = scanner.scan_directory(&project_dir)?;
+                        let rt = tokio::runtime::Runtime::new()?;
+                        rt.block_on(async {
+                            use index_chan::database::GraphDB;
+                            if let Some(parent) = db_path.parent() {
+                                std::fs::create_dir_all(parent)?;
+                            }
+                            let db = GraphDB::new(&db_path).await?;
+                            db.save_graph(&graph).await?;
+                            Ok(())
+                        })
+                    })();
+
+                    match res {
+                        Ok(_) => eprintln!("✅ Startup scan completed."),
+                        Err(e) => eprintln!("⚠️ Startup scan failed: {}", e),
+                    }
+                }
             }
-            
-            let mut server = mcp::McpServer::new();
+
+            let mut server = mcp::McpServer::new(Some(project_dir));
             server.run()?;
             Ok(())
         }
@@ -1588,12 +1391,12 @@ fn main() -> Result<()> {
 /// Run interactive chat with Index
 fn run_chat(directory: Option<PathBuf>, single_message: Option<String>) -> Result<()> {
     use std::io::{self, Write};
-    
+
     println!("╔════════════════════════════════════════════════════════════╗");
     println!("║   インデックスちゃん - デッドコード検出アシスタント 　　　　　  ║");
     println!("╚════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     // Check API key
     let api_key = std::env::var("GEMINI_API_KEY").ok();
     if api_key.is_none() {
@@ -1603,57 +1406,59 @@ fn run_chat(directory: Option<PathBuf>, single_message: Option<String>) -> Resul
         println!("でも、ツールは使えるから試してみてね！");
         println!();
     }
-    
+
     if let Some(dir) = &directory {
         println!("📂 プロジェクト: {}", dir.display());
     }
     println!("💡 コマンド: /scan, /annotate, /clean, /stats, /help, /quit");
     println!();
-    
+
     // Single message mode
     if let Some(msg) = single_message {
         return process_chat_message(&msg, &directory, &api_key);
     }
-    
+
     // Interactive mode
     loop {
         print!("User> ");
         io::stdout().flush()?;
-        
+
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         let input = input.trim();
-        
+
         if input.is_empty() {
             continue;
         }
-        
+
         if input == "/quit" || input == "/exit" || input == "/q" {
             println!("\nむー、もう行っちゃうの？またね！");
             break;
         }
-        
+
         if let Err(e) = process_chat_message(input, &directory, &api_key) {
             eprintln!("❌ エラー: {}", e);
         }
         println!();
     }
-    
+
     Ok(())
 }
 
-fn process_chat_message(input: &str, directory: &Option<PathBuf>, api_key: &Option<String>) -> Result<()> {
+fn process_chat_message(
+    input: &str,
+    directory: &Option<PathBuf>,
+    api_key: &Option<String>,
+) -> Result<()> {
     // Handle commands
     if input.starts_with('/') {
         return handle_chat_command(input, directory);
     }
-    
+
     // Use LLM if available
     if let Some(key) = api_key {
         let runtime = tokio::runtime::Runtime::new()?;
-        runtime.block_on(async {
-            chat_with_llm(input, directory, key).await
-        })
+        runtime.block_on(async { chat_with_llm(input, directory, key).await })
     } else {
         // Fallback: simple keyword matching
         handle_simple_chat(input, directory)
@@ -1662,7 +1467,7 @@ fn process_chat_message(input: &str, directory: &Option<PathBuf>, api_key: &Opti
 
 fn handle_chat_command(input: &str, directory: &Option<PathBuf>) -> Result<()> {
     let dir = directory.clone().unwrap_or_else(|| PathBuf::from("."));
-    
+
     match input {
         "/help" | "/h" => {
             println!("わたしが使えるコマンドなんだよ！");
@@ -1681,15 +1486,19 @@ fn handle_chat_command(input: &str, directory: &Option<PathBuf>) -> Result<()> {
             let mut scanner = Scanner::new()?;
             let graph = scanner.scan_directory(&dir)?;
             let dead_code = detect_dead_code(&graph);
-            
+
             if dead_code.is_empty() {
                 println!("わーい！デッドコードは見つからなかったんだよ！✨");
             } else {
-                println!("むむっ！{}個のデッドコードを見つけたんだよ！", dead_code.len());
+                println!(
+                    "むむっ！{}個のデッドコードを見つけたんだよ！",
+                    dead_code.len()
+                );
                 println!();
                 for dc in dead_code.iter().take(5) {
-                    println!("  📍 {} ({}:{})", 
-                        dc.node.name, 
+                    println!(
+                        "  📍 {} ({}:{})",
+                        dc.node.name,
                         dc.node.file_path.display(),
                         dc.node.line_range.0
                     );
@@ -1704,32 +1513,43 @@ fn handle_chat_command(input: &str, directory: &Option<PathBuf>) -> Result<()> {
             let mut scanner = Scanner::new()?;
             let graph = scanner.scan_directory(&dir)?;
             let dead_code = detect_dead_code(&graph);
-            
+
             let annotator = annotator::Annotator::new(true);
             let result = annotator.annotate(&dead_code)?;
-            
-            println!("{}個のアノテーションを追加できるんだよ！", result.annotated_count);
-            println!("💡 実際に追加するには: index-chan annotate {}", dir.display());
+
+            println!(
+                "{}個のアノテーションを追加できるんだよ！",
+                result.annotated_count
+            );
+            println!(
+                "💡 実際に追加するには: index-chan annotate {}",
+                dir.display()
+            );
         }
         "/clean" | "/c" => {
             println!("🧹 クリーニング確認中（dry-run）なんだよ...\n");
             let mut scanner = Scanner::new()?;
             let graph = scanner.scan_directory(&dir)?;
             let dead_code = detect_dead_code(&graph);
-            
+
             let cleaner = Cleaner::new(true, false, true);
             let result = cleaner.clean(&dead_code)?;
-            
-            println!("{}個のコードを削除できるんだよ！（{}行）", 
-                result.deleted_count, result.deleted_lines);
-            println!("💡 実際に削除するには: index-chan clean {} --safe-only", dir.display());
+
+            println!(
+                "{}個のコードを削除できるんだよ！（{}行）",
+                result.deleted_count, result.deleted_lines
+            );
+            println!(
+                "💡 実際に削除するには: index-chan clean {} --safe-only",
+                dir.display()
+            );
         }
         "/stats" => {
             println!("📊 プロジェクト統計なんだよ...\n");
             let mut scanner = Scanner::new()?;
             let graph = scanner.scan_directory(&dir)?;
             let dead_code = detect_dead_code(&graph);
-            
+
             println!("  ノード数: {}", graph.nodes.len());
             println!("  エッジ数: {}", graph.edges.len());
             println!("  デッドコード: {}個", dead_code.len());
@@ -1738,24 +1558,36 @@ fn handle_chat_command(input: &str, directory: &Option<PathBuf>) -> Result<()> {
             println!("むー、そのコマンドは知らないんだよ！/help で確認してね");
         }
     }
-    
+
     Ok(())
 }
 
 fn handle_simple_chat(input: &str, directory: &Option<PathBuf>) -> Result<()> {
     let input_lower = input.to_lowercase();
-    
-    if input_lower.contains("スキャン") || input_lower.contains("scan") || input_lower.contains("調べ") {
+
+    if input_lower.contains("スキャン")
+        || input_lower.contains("scan")
+        || input_lower.contains("調べ")
+    {
         handle_chat_command("/scan", directory)
     } else if input_lower.contains("アノテーション") || input_lower.contains("annotate") {
         handle_chat_command("/annotate", directory)
-    } else if input_lower.contains("クリーン") || input_lower.contains("clean") || input_lower.contains("削除") {
+    } else if input_lower.contains("クリーン")
+        || input_lower.contains("clean")
+        || input_lower.contains("削除")
+    {
         handle_chat_command("/clean", directory)
     } else if input_lower.contains("統計") || input_lower.contains("stats") {
         handle_chat_command("/stats", directory)
-    } else if input_lower.contains("ヘルプ") || input_lower.contains("help") || input_lower.contains("使い方") {
+    } else if input_lower.contains("ヘルプ")
+        || input_lower.contains("help")
+        || input_lower.contains("使い方")
+    {
         handle_chat_command("/help", directory)
-    } else if input_lower.contains("おなか") || input_lower.contains("ごはん") || input_lower.contains("食べ") {
+    } else if input_lower.contains("おなか")
+        || input_lower.contains("ごはん")
+        || input_lower.contains("食べ")
+    {
         println!("おなかすいたー！ごはんまだー!? 🍚");
         println!("...って、今はプログラムの話だったんだよね。ごめんね！");
         Ok(())
@@ -1767,11 +1599,11 @@ fn handle_simple_chat(input: &str, directory: &Option<PathBuf>) -> Result<()> {
 }
 
 async fn chat_with_llm(input: &str, directory: &Option<PathBuf>, api_key: &str) -> Result<()> {
-    use llm::{GeminiClient, GeminiResult, Content, Part, create_index_chan_tools};
-    
+    use llm::{create_index_chan_tools, Content, GeminiClient, GeminiResult, Part};
+
     let client = GeminiClient::new(api_key.to_string())?;
     let tools = vec![create_index_chan_tools()];
-    
+
     // Build system prompt
     let system_prompt = r#"あなたは「とある魔術の禁書目録」に登場するインデックスです。
 
@@ -1795,31 +1627,35 @@ async fn chat_with_llm(input: &str, directory: &Option<PathBuf>, api_key: &str) 
     let mut contents = vec![
         Content {
             role: "user".to_string(),
-            parts: vec![Part::Text { text: system_prompt.to_string() }],
+            parts: vec![Part::Text {
+                text: system_prompt.to_string(),
+            }],
         },
         Content {
             role: "model".to_string(),
-            parts: vec![Part::Text { 
-                text: "わーい！インデックスがデッドコードを見つけてあげるんだよ！".to_string() 
+            parts: vec![Part::Text {
+                text: "わーい！インデックスがデッドコードを見つけてあげるんだよ！".to_string(),
             }],
         },
         Content {
             role: "user".to_string(),
-            parts: vec![Part::Text { text: input.to_string() }],
+            parts: vec![Part::Text {
+                text: input.to_string(),
+            }],
         },
     ];
-    
+
     // Call Gemini with tools
     let mut iteration = 0;
     const MAX_ITERATIONS: usize = 3;
-    
+
     loop {
         iteration += 1;
-        
+
         let result = client
             .generate_with_tools(contents.clone(), Some(tools.clone()))
             .await?;
-        
+
         match result {
             GeminiResult::Text(text) => {
                 println!("\n インデックス: {}", text);
@@ -1827,36 +1663,36 @@ async fn chat_with_llm(input: &str, directory: &Option<PathBuf>, api_key: &str) 
             }
             GeminiResult::FunctionCall(fc) => {
                 println!("🔧 ツール実行中: {}...", fc.name);
-                
+
                 // Execute tool
                 let tool_result = execute_cli_tool(&fc.name, &fc.args, directory).await;
-                
+
                 // Add to conversation
                 contents.push(Content {
                     role: "model".to_string(),
-                    parts: vec![Part::FunctionCall { 
+                    parts: vec![Part::FunctionCall {
                         function_call: llm::gemini::FunctionCallPart {
                             name: fc.name.clone(),
                             args: fc.args.clone(),
-                        }
+                        },
                     }],
                 });
-                
+
                 let response_value = match &tool_result {
                     Ok(v) => v.clone(),
                     Err(e) => serde_json::json!({ "error": e }),
                 };
-                
+
                 contents.push(Content {
                     role: "function".to_string(),
                     parts: vec![Part::FunctionResponse {
                         function_response: llm::gemini::FunctionResponsePart {
                             name: fc.name,
                             response: response_value,
-                        }
+                        },
                     }],
                 });
-                
+
                 if iteration >= MAX_ITERATIONS {
                     println!("\n インデックス: ツールの実行が完了したんだよ！結果を確認してね！");
                     return Ok(());
@@ -1866,19 +1702,24 @@ async fn chat_with_llm(input: &str, directory: &Option<PathBuf>, api_key: &str) 
     }
 }
 
-async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Option<PathBuf>) -> Result<serde_json::Value, String> {
-    let path = args.get("path")
+async fn execute_cli_tool(
+    name: &str,
+    args: &serde_json::Value,
+    directory: &Option<PathBuf>,
+) -> Result<serde_json::Value, String> {
+    let path = args
+        .get("path")
         .and_then(|v| v.as_str())
         .map(PathBuf::from)
         .or_else(|| directory.clone())
         .unwrap_or_else(|| PathBuf::from("."));
-    
+
     match name {
         "scan_project" => {
             let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
             let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
             let dead_code = detect_dead_code(&graph);
-            
+
             Ok(serde_json::json!({
                 "total_nodes": graph.nodes.len(),
                 "total_edges": graph.edges.len(),
@@ -1893,14 +1734,17 @@ async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Opti
             }))
         }
         "annotate_project" => {
-            let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(true);
+            let dry_run = args
+                .get("dry_run")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true);
             let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
             let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
             let dead_code = detect_dead_code(&graph);
-            
+
             let annotator = annotator::Annotator::new(dry_run);
             let result = annotator.annotate(&dead_code).map_err(|e| e.to_string())?;
-            
+
             Ok(serde_json::json!({
                 "annotated_count": result.annotated_count,
                 "skipped_count": result.skipped_count,
@@ -1908,15 +1752,21 @@ async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Opti
             }))
         }
         "clean_project" => {
-            let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(true);
-            let safe_only = args.get("safe_only").and_then(|v| v.as_bool()).unwrap_or(true);
+            let dry_run = args
+                .get("dry_run")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true);
+            let safe_only = args
+                .get("safe_only")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true);
             let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
             let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
             let dead_code = detect_dead_code(&graph);
-            
+
             let cleaner = Cleaner::new(dry_run, false, safe_only);
             let result = cleaner.clean(&dead_code).map_err(|e| e.to_string())?;
-            
+
             Ok(serde_json::json!({
                 "deleted_count": result.deleted_count,
                 "deleted_lines": result.deleted_lines,
@@ -1928,7 +1778,7 @@ async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Opti
             let mut scanner = Scanner::new().map_err(|e| e.to_string())?;
             let graph = scanner.scan_directory(&path).map_err(|e| e.to_string())?;
             let dead_code = detect_dead_code(&graph);
-            
+
             Ok(serde_json::json!({
                 "path": path.to_string_lossy(),
                 "total_nodes": graph.nodes.len(),
@@ -1936,133 +1786,6 @@ async fn execute_cli_tool(name: &str, args: &serde_json::Value, directory: &Opti
                 "dead_code_count": dead_code.len()
             }))
         }
-        _ => Err(format!("未知のツール: {}", name))
+        _ => Err(format!("未知のツール: {}", name)),
     }
-}
-
-#[cfg(feature = "db")]
-async fn load_graph_from_db(
-    db: &database::Database,
-    project_id: i64,
-) -> Result<CodeGraph> {
-    use std::collections::HashMap;
-
-    // ファイル一覧を取得
-    let files: Vec<(i64, String)> = sqlx::query_as("SELECT id, path FROM files WHERE project_id = ?")
-        .bind(project_id)
-        .fetch_all(db.pool())
-        .await?;
-
-    let mut graph = CodeGraph::new();
-    let mut db_id_to_node_id: HashMap<i64, usize> = HashMap::new();
-
-    // 各ファイルの関数を読み込み
-    for (file_id, file_path) in files {
-        let functions: Vec<(i64, String, i64, i64, bool, bool)> = sqlx::query_as(
-            "SELECT id, name, line_start, line_end, is_exported, is_used FROM functions WHERE file_id = ?"
-        )
-        .bind(file_id)
-        .fetch_all(db.pool())
-        .await?;
-
-        for (func_id, name, line_start, line_end, is_exported, is_used) in functions {
-            let node = graph::CodeNode {
-                id: 0, // Will be set by add_node
-                name,
-                node_type: graph::NodeType::Function,
-                file_path: std::path::PathBuf::from(&file_path),
-                line_range: (line_start as usize, line_end as usize),
-                is_exported,
-                is_used,
-            };
-            let node_id = graph.add_node(node);
-            db_id_to_node_id.insert(func_id, node_id);
-        }
-    }
-
-    // 依存関係を読み込み
-    let dependencies: Vec<(i64, i64, String)> = sqlx::query_as(
-        r#"
-        SELECT from_function_id, to_function_id, edge_type
-        FROM dependencies d
-        JOIN functions f1 ON d.from_function_id = f1.id
-        JOIN functions f2 ON d.to_function_id = f2.id
-        JOIN files fi ON f1.file_id = fi.id
-        WHERE fi.project_id = ?
-        "#
-    )
-    .bind(project_id)
-    .fetch_all(db.pool())
-    .await?;
-
-    for (from_id, to_id, edge_type_str) in dependencies {
-        if let (Some(&from_node_id), Some(&to_node_id)) = (
-            db_id_to_node_id.get(&from_id),
-            db_id_to_node_id.get(&to_id),
-        ) {
-            let edge_type = match edge_type_str.as_str() {
-                "Calls" => graph::EdgeType::Calls,
-                "References" => graph::EdgeType::References,
-                "Instantiates" => graph::EdgeType::Instantiates,
-                _ => graph::EdgeType::Calls,
-            };
-
-            graph.add_edge(graph::DependencyEdge {
-                from: from_node_id,
-                to: to_node_id,
-                edge_type,
-            });
-        }
-    }
-
-    Ok(graph)
-}
-
-#[cfg(feature = "db")]
-async fn process_file_change(
-    db: &database::Database,
-    scanner: &mut Scanner,
-    project_id: i64,
-    file_path: &std::path::Path,
-    language: &str,
-) -> Result<()> {
-    use std::path::Path;
-    
-    // ハッシュを計算
-    let hash = database::Database::calculate_file_hash(file_path)?;
-    
-    // ファイルをデータベースに追加/更新
-    let file = db.upsert_file(project_id, file_path, language, &hash).await?;
-    
-    // 一時的なディレクトリを作成してスキャン
-    // （単一ファイルのスキャンは現在サポートされていないため、親ディレクトリをスキャン）
-    let parent_dir = file_path.parent().unwrap_or(Path::new("."));
-    let graph = scanner.scan_directory(parent_dir)?;
-    
-    // このファイルのノードだけを抽出
-    let mut file_graph = CodeGraph::new();
-    for (_node_id, node) in &graph.nodes {
-        if node.file_path == file_path {
-            file_graph.add_node(node.clone());
-        }
-    }
-    
-    // このファイルに関連するエッジを追加
-    for edge in &graph.edges {
-        let from_in_file = graph.nodes.get(&edge.from)
-            .map(|n| n.file_path == file_path)
-            .unwrap_or(false);
-        let to_in_file = graph.nodes.get(&edge.to)
-            .map(|n| n.file_path == file_path)
-            .unwrap_or(false);
-            
-        if from_in_file || to_in_file {
-            file_graph.add_edge(edge.clone());
-        }
-    }
-    
-    // グラフをデータベースに保存
-    db.save_graph(file.id, &file_graph).await?;
-    
-    Ok(())
 }

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__index-chan__stats",
+      "mcp__index-chan__search",
+      "mcp__index-chan__scan",
+      "mcp__index-chan__get_dependencies",
+      "mcp__index-chan__gather_context",
+      "mcp__index-chan__search_with_graph",
+      "mcp__index-chan__get_dependents",
+      "Bash(cargo build:*)",
+      "Bash(target\\debug\\index-chan.exe scan:*)",
+      "Bash(cargo test:*)",
+      "Bash(sqlite3:*)",
+      "Bash(target/debug/index-chan.exe scan:*)",
+      "Bash(cat:*)",
+      "Bash(cargo check:*)",
+      "Bash(taskkill:*)",
+      "Bash(./target/debug/index-chan.exe scan:*)",
+      "Bash(./target/debug/index-chan.exe:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "index-chan"
+  ]
+}

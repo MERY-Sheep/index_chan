@@ -1,132 +1,3108 @@
 [
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "unusedExport",
-    "start_line": 19,
-    "end_line": 21,
+    "file_path": "src\\detector.rs",
+    "function_name": "evaluate_safety",
+    "start_line": 58,
+    "end_line": 88,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "has_dynamic_call_risk"
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "futureFeature",
-    "start_line": 10,
+    "file_path": "src\\backup.rs",
+    "function_name": "list_backups",
+    "start_line": 133,
+    "end_line": 146,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "get_or_create_project",
+    "start_line": 52,
+    "end_line": 93,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "test_filter_dead_code",
+    "start_line": 367,
+    "end_line": 398,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_node",
+      "new",
+      "filter_dead_code",
+      "filter_dead_code"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "import_exists_in_graph",
+    "start_line": 248,
+    "end_line": 261,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\error_helper.rs",
+    "function_name": "print_error_with_help",
+    "start_line": 5,
+    "end_line": 110,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_get_dependents",
+    "start_line": 311,
+    "end_line": 330,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "get_dependents"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "generate_diff",
+    "start_line": 371,
+    "end_line": 395,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "len",
+      "len",
+      "len",
+      "is_empty",
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\chat_server.rs",
+    "function_name": "graph_handler",
+    "start_line": 61,
+    "end_line": 63,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\graph.rs",
+    "function_name": "traverse_from",
+    "start_line": 90,
+    "end_line": 148,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "collect_dependencies",
+    "start_line": 97,
+    "end_line": 120,
+    "code_snippet": "Function",
+    "dependencies": [
+      "collect_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "chat_with_llm",
+    "start_line": 1601,
+    "end_line": 1703,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "generate_with_tools",
+      "execute_cli_tool"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "test_get_dependencies",
+    "start_line": 343,
+    "end_line": 354,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "from_graph",
+      "get_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "run",
+    "start_line": 31,
+    "end_line": 67,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "is_empty",
+      "handle_request",
+      "error"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_gather_context",
+    "start_line": 267,
+    "end_line": 286,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "gather_context",
+      "gather_context"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "load",
+    "start_line": 123,
+    "end_line": 132,
+    "code_snippet": "Function",
+    "dependencies": [
+      "add_batch"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "new",
+    "start_line": 29,
+    "end_line": 42,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\search\\query.rs",
+    "function_name": "test_search_query",
+    "start_line": 52,
+    "end_line": 62,
+    "code_snippet": "Function",
+    "dependencies": [
+      "with_top_k",
+      "with_min_score",
+      "with_context",
+      "with_top_k",
+      "with_min_score",
+      "with_top_k",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "apply_changes",
+    "start_line": 414,
+    "end_line": 445,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "create_backup_dir",
+      "apply_single_change",
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\analyzer.rs",
+    "function_name": "new",
+    "start_line": 12,
     "end_line": 14,
     "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
+    "dependencies": []
   },
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "usedMethod",
-    "start_line": 25,
-    "end_line": 27,
+    "file_path": "src\\graph.rs",
+    "function_name": "get_node",
+    "start_line": 78,
+    "end_line": 80,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "run_chat",
+    "start_line": 1392,
+    "end_line": 1446,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "process_chat_message",
+      "new",
+      "is_empty",
+      "process_chat_message"
     ]
   },
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "usedFunction",
-    "start_line": 2,
-    "end_line": 5,
+    "file_path": "src\\scanner.rs",
+    "function_name": "scan_file",
+    "start_line": 73,
+    "end_line": 98,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "new",
+      "parse_file",
+      "parse_file",
+      "extract_functions",
+      "add_node"
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "experimentalAI",
-    "start_line": 22,
-    "end_line": 26,
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "new",
+    "start_line": 23,
+    "end_line": 28,
     "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
+    "dependencies": []
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "internalHelper",
-    "start_line": 29,
-    "end_line": 31,
-    "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
-  },
-  {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "deadMethod",
-    "start_line": 30,
-    "end_line": 32,
-    "code_snippet": "Function",
-    "dependencies": [
-      "helperFunction"
-    ]
-  },
-  {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "simpleUnused",
-    "start_line": 38,
+    "file_path": "src\\backup.rs",
+    "function_name": "new",
+    "start_line": 34,
     "end_line": 40,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "new"
     ]
   },
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "deadFunction",
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "parse_context_file",
+    "start_line": 492,
+    "end_line": 537,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "get_function_name",
+    "start_line": 103,
+    "end_line": 138,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "new",
+    "start_line": 53,
+    "end_line": 61,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\scanner.rs",
+    "function_name": "new",
+    "start_line": 13,
+    "end_line": 15,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\query.rs",
+    "function_name": "with_context",
+    "start_line": 41,
+    "end_line": 44,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "get_dead_code",
+    "start_line": 261,
+    "end_line": 287,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "parse_query_with_llm",
+    "start_line": 174,
+    "end_line": 205,
+    "code_snippet": "Function",
+    "dependencies": [
+      "generate",
+      "parse_llm_response"
+    ]
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "new",
+    "start_line": 29,
+    "end_line": 36,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "create_backup_dir",
+    "start_line": 448,
+    "end_line": 453,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "collect_dependencies",
+    "start_line": 263,
+    "end_line": 280,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "pool",
+    "start_line": 18,
+    "end_line": 20,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "init_schema",
+    "start_line": 46,
+    "end_line": 49,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "build_from_graph",
+    "start_line": 84,
+    "end_line": 86,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "format_context",
+    "start_line": 123,
+    "end_line": 177,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "read_code_range"
+    ]
+  },
+  {
+    "file_path": "src\\graph.rs",
+    "function_name": "add_node",
+    "start_line": 65,
+    "end_line": 71,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "extract_confidence",
+    "start_line": 171,
+    "end_line": 188,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "handle_simple_chat",
+    "start_line": 1565,
+    "end_line": 1599,
+    "code_snippet": "Function",
+    "dependencies": [
+      "handle_chat_command",
+      "handle_chat_command",
+      "handle_chat_command",
+      "handle_chat_command",
+      "handle_chat_command"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "restore_change",
+    "start_line": 173,
+    "end_line": 203,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "with_gemini",
+    "start_line": 47,
+    "end_line": 54,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\reporter.rs",
+    "function_name": "print_dead_code_entry",
+    "start_line": 115,
+    "end_line": 119,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_functions",
+    "start_line": 56,
+    "end_line": 63,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "traverse_node"
+    ]
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "with_llm_analyses",
+    "start_line": 28,
+    "end_line": 34,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "embed_batch",
+    "start_line": 89,
+    "end_line": 126,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "len",
+      "new",
+      "new",
+      "new",
+      "mean_pooling",
+      "normalize"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "get_dependents",
+    "start_line": 207,
+    "end_line": 220,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "collect_dependency_info"
+    ]
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "filter_keywords_handler",
+    "start_line": 134,
+    "end_line": 161,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "filter_by_keywords",
+      "filter_by_keywords",
+      "len",
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "new",
+    "start_line": 171,
+    "end_line": 173,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "embed",
+    "start_line": 175,
+    "end_line": 177,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "search",
+    "start_line": 31,
+    "end_line": 33,
+    "code_snippet": "Function",
+    "dependencies": [
+      "search_with_graph"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "extract_reason",
+    "start_line": 190,
+    "end_line": 205,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "new",
+    "start_line": 21,
+    "end_line": 26,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "save",
+    "start_line": 94,
+    "end_line": 101,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\exporter.rs",
+    "function_name": "escape_xml",
+    "start_line": 185,
+    "end_line": 191,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "add_change",
+    "start_line": 43,
+    "end_line": 49,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\chat_server.rs",
+    "function_name": "start_chat_server",
+    "start_line": 27,
+    "end_line": 52,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\chat_server.rs",
+    "function_name": "start_chat_server",
+    "start_line": 73,
+    "end_line": 79,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "should_annotate",
+    "start_line": 89,
+    "end_line": 107,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "main",
+    "start_line": 323,
+    "end_line": 1389,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "load_graph",
+      "new",
+      "scan_directory",
+      "new",
+      "len",
+      "detect_dead_code",
+      "print_report",
+      "generate_json_report",
+      "new",
+      "scan_directory",
+      "detect_dead_code",
+      "is_empty",
+      "new",
+      "clean_with_backup",
+      "new",
+      "scan_directory",
+      "detect_dead_code",
+      "is_empty",
+      "new",
+      "annotate_with_backup",
+      "new",
+      "list_backups",
+      "is_empty",
+      "load",
+      "get_latest_backup",
+      "load",
+      "new",
+      "restore",
+      "is_empty",
+      "new",
+      "scan_directory",
+      "new",
+      "search",
+      "add",
+      "save",
+      "new",
+      "search",
+      "load",
+      "search",
+      "is_empty",
+      "is_empty",
+      "new",
+      "analyze_file",
+      "stats",
+      "calculate_token_reduction",
+      "new",
+      "analyze_file",
+      "new",
+      "new",
+      "is_empty",
+      "new",
+      "analyze_file",
+      "stats",
+      "find_related_messages",
+      "is_empty",
+      "get_context_window",
+      "len",
+      "calculate_token_reduction",
+      "new",
+      "new",
+      "load_graph",
+      "new",
+      "scan_directory",
+      "export_graphml",
+      "export_dot",
+      "export_json",
+      "new",
+      "new",
+      "load_graph",
+      "new",
+      "scan_directory",
+      "new",
+      "new",
+      "start_server",
+      "new",
+      "scan_directory",
+      "new",
+      "new",
+      "save_graph",
+      "new",
+      "new",
+      "load_graph",
+      "detect_dead_code",
+      "new",
+      "analyze_file",
+      "calculate_token_reduction",
+      "from_conversation_graph",
+      "load",
+      "new",
+      "new",
+      "is_empty",
+      "stats",
+      "new",
+      "new",
+      "new",
+      "new",
+      "start_chat_server",
+      "load",
+      "stats",
+      "get_prompts_with_node",
+      "get_all_prompts",
+      "run_chat",
+      "new",
+      "scan_directory",
+      "new",
+      "new",
+      "save_graph",
+      "new",
+      "run"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "function_exists_in_file",
+    "start_line": 322,
+    "end_line": 330,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "read_code_range",
+    "start_line": 180,
+    "end_line": 188,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "get_latest_backup",
+    "start_line": 114,
+    "end_line": 130,
+    "code_snippet": "Function",
+    "dependencies": [
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "delete_file",
+    "start_line": 194,
+    "end_line": 204,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "filter_by_file",
+    "start_line": 115,
+    "end_line": 137,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "collect_dependencies",
+      "build_filtered_graph"
+    ]
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "test_filter_by_keywords",
+    "start_line": 333,
+    "end_line": 364,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_node",
+      "new",
+      "filter_by_keywords",
+      "filter_by_keywords"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "new",
+    "start_line": 36,
+    "end_line": 40,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "execute_cli_tool",
+    "start_line": 1705,
+    "end_line": 1791,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "annotate",
+      "annotate",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "clean",
+      "clean",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_scan",
+    "start_line": 167,
+    "end_line": 221,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_arg",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "save_graph"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "save",
+    "start_line": 116,
+    "end_line": 120,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "check_syntax",
+    "start_line": 174,
+    "end_line": 203,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "default",
+    "start_line": 19,
+    "end_line": 21,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "filter_file_handler",
+    "start_line": 188,
+    "end_line": 210,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "filter_by_file",
+      "filter_by_file",
+      "len",
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "parse_topic_response",
+    "start_line": 181,
+    "end_line": 195,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "new",
+    "start_line": 29,
+    "end_line": 40,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\scanner.rs",
+    "function_name": "find_node_by_name",
+    "start_line": 151,
+    "end_line": 156,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "search",
+    "start_line": 52,
+    "end_line": 102,
+    "code_snippet": "Function",
+    "dependencies": [
+      "is_empty",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "get_nodes_by_topic",
+    "start_line": 100,
+    "end_line": 105,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "total_tokens",
+    "start_line": 89,
+    "end_line": 91,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "get_node",
+    "start_line": 77,
+    "end_line": 79,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\function_calling.rs",
+    "function_name": "all",
+    "start_line": 53,
+    "end_line": 60,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "handle_request",
+    "start_line": 70,
+    "end_line": 82,
+    "code_snippet": "Function",
+    "dependencies": [
+      "handle_initialize",
+      "success",
+      "handle_tools_list",
+      "handle_tools_call",
+      "error"
+    ]
+  },
+  {
+    "file_path": "src\\chat_server.rs",
+    "function_name": "prompts_handler",
+    "start_line": 66,
+    "end_line": 68,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database.rs",
+    "function_name": "save_graph",
+    "start_line": 70,
+    "end_line": 116,
+    "code_snippet": "Function",
+    "dependencies": [
+      "pool"
+    ]
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "process_chat_message",
+    "start_line": 1448,
+    "end_line": 1466,
+    "code_snippet": "Function",
+    "dependencies": [
+      "handle_chat_command",
+      "new",
+      "chat_with_llm",
+      "handle_simple_chat"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "save_graph",
+    "start_line": 207,
+    "end_line": 258,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "get_project_stats",
+    "start_line": 290,
+    "end_line": 314,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "get_dependencies",
+    "start_line": 191,
+    "end_line": 204,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "collect_dependency_info"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "parse_file",
+    "start_line": 599,
+    "end_line": 601,
+    "code_snippet": "Function",
+    "dependencies": [
+      "parse_file"
+    ]
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "graph_handler",
+    "start_line": 59,
+    "end_line": 61,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\detector.rs",
+    "function_name": "is_entry_point",
+    "start_line": 52,
+    "end_line": 56,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "generate_with_contents",
+    "start_line": 147,
+    "end_line": 219,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "handle_tools_list",
+    "start_line": 105,
+    "end_line": 108,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_tool_definitions",
+      "success"
+    ]
+  },
+  {
+    "file_path": "src\\database.rs",
+    "function_name": "new",
     "start_line": 14,
-    "end_line": 16,
+    "end_line": 32,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "new",
+      "init_schema"
     ]
   },
   {
-    "file_path": "test_project\\sample.ts",
-    "function_name": "helperFunction",
-    "start_line": 8,
-    "end_line": 10,
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "continue_with_function_response",
+    "start_line": 125,
+    "end_line": 143,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "generate_with_contents"
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "oldDeprecatedFunction",
-    "start_line": 4,
-    "end_line": 7,
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "add_topic",
+    "start_line": 71,
+    "end_line": 73,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "filter_by_semantic_search",
+    "start_line": 141,
+    "end_line": 170,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "search",
+      "new",
+      "find_node_by_name",
+      "collect_dependencies",
+      "build_filtered_graph"
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "publicAPI",
-    "start_line": 33,
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "build_prompt",
+    "start_line": 59,
+    "end_line": 100,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "count_changes",
+    "start_line": 398,
+    "end_line": 411,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "new",
+    "start_line": 31,
     "end_line": 35,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "new"
     ]
   },
   {
-    "file_path": "test_project\\test_cases.ts",
-    "function_name": "activeFunction",
-    "start_line": 17,
-    "end_line": 19,
+    "file_path": "src\\web_server.rs",
+    "function_name": "index_handler",
+    "start_line": 55,
+    "end_line": 57,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "generate_with_tools",
+    "start_line": 116,
+    "end_line": 122,
     "code_snippet": "Function",
     "dependencies": [
-      "helperFunction"
+      "generate_with_contents"
     ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "cosine_similarity",
+    "start_line": 183,
+    "end_line": 185,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "detect_topics",
+    "start_line": 57,
+    "end_line": 63,
+    "code_snippet": "Function",
+    "dependencies": [
+      "detect_topics_with_gemini",
+      "detect_topics_keyword_based"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "with_model",
+    "start_line": 95,
+    "end_line": 98,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "get_or_create",
+    "start_line": 144,
+    "end_line": 146,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "traverse_node",
+    "start_line": 65,
+    "end_line": 88,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_function_info",
+      "traverse_node"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "new",
+    "start_line": 593,
+    "end_line": 597,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "from_directory",
+    "start_line": 40,
+    "end_line": 44,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "scan_directory"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\protocol.rs",
+    "function_name": "success",
+    "start_line": 49,
+    "end_line": 56,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "traverse_from_names",
+    "start_line": 96,
+    "end_line": 103,
+    "code_snippet": "Function",
+    "dependencies": [
+      "find_nodes_by_name",
+      "traverse_from"
+    ]
+  },
+  {
+    "file_path": "src\\reporter.rs",
+    "function_name": "generate_json_report",
+    "start_line": 121,
+    "end_line": 162,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\search\\query.rs",
+    "function_name": "new",
+    "start_line": 16,
+    "end_line": 23,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\query.rs",
+    "function_name": "with_top_k",
+    "start_line": 27,
+    "end_line": 30,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "analyze",
+    "start_line": 42,
+    "end_line": 49,
+    "code_snippet": "Function",
+    "dependencies": [
+      "analyze_with_llm",
+      "analyze_rule_based"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "create_backup_dir",
+    "start_line": 86,
+    "end_line": 96,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\database.rs",
+    "function_name": "init_schema",
+    "start_line": 34,
+    "end_line": 68,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_macro_call",
+    "start_line": 372,
+    "end_line": 390,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "gather_context",
+    "start_line": 52,
+    "end_line": 94,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "collect_dependencies",
+      "format_context",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "test_auto_rotate",
+    "start_line": 155,
+    "end_line": 175,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_prompt"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "get_prompts_with_node",
+    "start_line": 77,
+    "end_line": 86,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\function_calling.rs",
+    "function_name": "create_index_chan_tools",
+    "start_line": 157,
+    "end_line": 164,
+    "code_snippet": "Function",
+    "dependencies": [
+      "all",
+      "to_declaration"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\tools.rs",
+    "function_name": "get_tool_definitions",
+    "start_line": 8,
+    "end_line": 312,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "add",
+    "start_line": 38,
+    "end_line": 41,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "filter_handler",
+    "start_line": 103,
+    "end_line": 131,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "filter_by_keywords",
+      "filter_by_keywords",
+      "len",
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "default",
+    "start_line": 494,
+    "end_line": 496,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "get_prompt",
+    "start_line": 67,
+    "end_line": 69,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\reporter.rs",
+    "function_name": "print_report",
+    "start_line": 30,
+    "end_line": 113,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "is_empty",
+      "print_dead_code_entry",
+      "len",
+      "is_empty",
+      "print_dead_code_entry",
+      "len",
+      "is_empty",
+      "print_dead_code_entry",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "load",
+    "start_line": 62,
+    "end_line": 69,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\detector.rs",
+    "function_name": "detect_dead_code",
+    "start_line": 18,
+    "end_line": 50,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "is_entry_point",
+      "evaluate_safety"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "get_context_window",
+    "start_line": 108,
+    "end_line": 117,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\exporter.rs",
+    "function_name": "export_json",
+    "start_line": 178,
+    "end_line": 182,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_method_chain",
+    "start_line": 393,
+    "end_line": 420,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_method_chain",
+      "extract_method_chain"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "add_prompt",
+    "start_line": 57,
+    "end_line": 64,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_calls",
+    "start_line": 607,
+    "end_line": 609,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_calls"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\function_calling.rs",
+    "function_name": "from_name",
+    "start_line": 145,
+    "end_line": 153,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\function_calling.rs",
+    "function_name": "to_declaration",
+    "start_line": 63,
+    "end_line": 142,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\exporter.rs",
+    "function_name": "export_dot",
+    "start_line": 113,
+    "end_line": 175,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\context.rs",
+    "function_name": "collect_context",
+    "start_line": 11,
+    "end_line": 24,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "detect_new_functions",
+    "start_line": 264,
+    "end_line": 281,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_function_name",
+      "function_exists_in_file"
+    ]
+  },
+  {
+    "file_path": "src\\scanner.rs",
+    "function_name": "scan_directory",
+    "start_line": 17,
+    "end_line": 71,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "from_extension",
+      "scan_file",
+      "build_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "analyze_with_llm",
+    "start_line": 51,
+    "end_line": 57,
+    "code_snippet": "Function",
+    "dependencies": [
+      "build_prompt",
+      "generate",
+      "parse_llm_response"
+    ]
+  },
+  {
+    "file_path": "src\\detector.rs",
+    "function_name": "has_dynamic_call_risk",
+    "start_line": 90,
+    "end_line": 94,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "test_topic_detector",
+    "start_line": 292,
+    "end_line": 297,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_keywords"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "embed_batch",
+    "start_line": 179,
+    "end_line": 181,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "new",
+    "start_line": 87,
+    "end_line": 93,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "normalize",
+    "start_line": 140,
+    "end_line": 144,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "detect_topics_keyword_based",
+    "start_line": 101,
+    "end_line": 139,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_keywords",
+      "len",
+      "add_topic"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "mean_pooling",
+    "start_line": 129,
+    "end_line": 137,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\cleaner.rs",
+    "function_name": "confirm_delete",
+    "start_line": 87,
+    "end_line": 105,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "with_llm",
+    "start_line": 70,
+    "end_line": 73,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "validate_imports",
+    "start_line": 206,
+    "end_line": 229,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_import_path",
+      "import_exists_in_graph"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "new",
+    "start_line": 52,
+    "end_line": 58,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\protocol.rs",
+    "function_name": "error",
+    "start_line": 58,
+    "end_line": 69,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_apply_changes",
+    "start_line": 391,
+    "end_line": 412,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "apply_changes",
+      "apply_changes"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_function_info",
+    "start_line": 90,
+    "end_line": 101,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_function_name",
+      "is_exported"
+    ]
+  },
+  {
+    "file_path": "src\\scanner.rs",
+    "function_name": "build_dependencies",
+    "start_line": 100,
+    "end_line": 139,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "parse_file",
+      "parse_file",
+      "extract_calls",
+      "find_node_at_line",
+      "find_node_by_name",
+      "add_edge",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "traverse_calls",
+    "start_line": 187,
+    "end_line": 218,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_call_info",
+      "extract_rust_calls",
+      "extract_macro_call",
+      "traverse_calls"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "test_prompt_history",
+    "start_line": 130,
+    "end_line": 152,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_prompt"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "new",
+    "start_line": 79,
+    "end_line": 83,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database.rs",
+    "function_name": "load_graph",
+    "start_line": 118,
+    "end_line": 191,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\cleaner.rs",
+    "function_name": "clean",
+    "start_line": 24,
+    "end_line": 26,
+    "code_snippet": "Function",
+    "dependencies": [
+      "clean_with_backup"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "embed",
+    "start_line": 83,
+    "end_line": 86,
+    "code_snippet": "Function",
+    "dependencies": [
+      "embed_batch"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "handle_tools_call",
+    "start_line": 111,
+    "end_line": 162,
+    "code_snippet": "Function",
+    "dependencies": [
+      "error",
+      "error",
+      "tool_scan",
+      "tool_search",
+      "tool_stats",
+      "tool_gather_context",
+      "tool_get_dependencies",
+      "tool_get_dependents",
+      "tool_validate_changes",
+      "tool_preview_changes",
+      "tool_apply_changes",
+      "tool_search_with_graph",
+      "success",
+      "success"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_get_dependencies",
+    "start_line": 289,
+    "end_line": 308,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "get_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "get_all_prompts",
+    "start_line": 72,
+    "end_line": 74,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "add_edge",
+    "start_line": 66,
+    "end_line": 68,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "new",
+    "start_line": 27,
+    "end_line": 29,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "calculate_file_hash",
+    "start_line": 96,
+    "end_line": 101,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "from_graph",
+    "start_line": 47,
+    "end_line": 49,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_import_info",
+    "start_line": 471,
+    "end_line": 582,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "is_empty",
+      "new",
+      "new",
+      "get_text",
+      "find_idents",
+      "find_idents",
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_call_info",
+    "start_line": 220,
+    "end_line": 287,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\analyzer.rs",
+    "function_name": "calculate_token_reduction",
+    "start_line": 124,
+    "end_line": 222,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "find_related_messages",
+      "len",
+      "is_empty",
+      "len",
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "load",
+    "start_line": 104,
+    "end_line": 108,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "parse_llm_response",
+    "start_line": 208,
+    "end_line": 244,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "get_directory_from_value",
+    "start_line": 339,
+    "end_line": 350,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "detect_modified_functions",
+    "start_line": 284,
+    "end_line": 301,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_function_name",
+      "function_exists_in_file"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\analyzer.rs",
+    "function_name": "test_conversation_analyzer",
+    "start_line": 249,
+    "end_line": 252,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "get_text",
+    "start_line": 545,
+    "end_line": 547,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "traverse_imports",
+    "start_line": 452,
+    "end_line": 469,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_import_info",
+      "traverse_imports"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "dimension",
+    "start_line": 164,
+    "end_line": 166,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "parse_file",
+    "start_line": 44,
+    "end_line": 54,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "search_with_graph",
+    "start_line": 41,
+    "end_line": 93,
+    "code_snippet": "Function",
+    "dependencies": [
+      "find_nodes_by_name",
+      "is_empty",
+      "new",
+      "traverse_from",
+      "get_node",
+      "get_node",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "cache_path",
+    "start_line": 89,
+    "end_line": 91,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "create_test_graph",
+    "start_line": 231,
+    "end_line": 279,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_node",
+      "add_node",
+      "add_edge",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "find_node_by_name",
+    "start_line": 316,
+    "end_line": 323,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph_exporter.rs",
+    "function_name": "save",
+    "start_line": 108,
+    "end_line": 112,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "preview_changes",
+    "start_line": 333,
+    "end_line": 368,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "generate_diff",
+      "count_changes"
+    ]
+  },
+  {
+    "file_path": "src\\exporter.rs",
+    "function_name": "export_graphml",
+    "start_line": 12,
+    "end_line": 110,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "detect_topics_with_gemini",
+    "start_line": 66,
+    "end_line": 98,
+    "code_snippet": "Function",
+    "dependencies": [
+      "build_topic_prompt",
+      "generate",
+      "parse_topic_response",
+      "add_topic"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "load",
+    "start_line": 43,
+    "end_line": 47,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "analyze_rule_based",
+    "start_line": 146,
+    "end_line": 167,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "from_directory",
+    "start_line": 89,
+    "end_line": 94,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "new",
+    "start_line": 39,
+    "end_line": 44,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database_legacy\\models.rs",
+    "function_name": "path_buf",
+    "start_line": 53,
+    "end_line": 55,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_rust_calls",
+    "start_line": 290,
+    "end_line": 369,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "extract_method_chain",
+      "extract_method_chain"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "stats",
+    "start_line": 94,
+    "end_line": 108,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "total_tokens"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "test_conversation_graph",
+    "start_line": 160,
+    "end_line": 184,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "create_test_graph",
+    "start_line": 284,
+    "end_line": 340,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_node",
+      "add_node",
+      "add_edge",
+      "add_edge",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "test_graph_traversal",
+    "start_line": 295,
+    "end_line": 303,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "new",
+      "traverse_from_names"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "validate_changes",
+    "start_line": 106,
+    "end_line": 171,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new",
+      "new",
+      "new",
+      "new",
+      "ensure_graph",
+      "check_syntax",
+      "validate_imports",
+      "is_empty",
+      "detect_new_functions",
+      "is_empty",
+      "detect_modified_functions",
+      "is_empty",
+      "is_empty",
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "test_code_index",
+    "start_line": 140,
+    "end_line": 157,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add",
+      "add",
+      "search",
+      "search"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "find_idents",
+    "start_line": 557,
+    "end_line": 565,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "filter_by_keywords",
+    "start_line": 76,
+    "end_line": 99,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "matches_keywords",
+      "collect_dependencies",
+      "build_filtered_graph"
+    ]
+  },
+  {
+    "file_path": "src\\graph.rs",
+    "function_name": "new",
+    "start_line": 57,
+    "end_line": 63,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "get_or_create",
+    "start_line": 118,
+    "end_line": 140,
+    "code_snippet": "Function",
+    "dependencies": [
+      "cache_path",
+      "load",
+      "len",
+      "len",
+      "build_from_graph",
+      "save"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "cosine_similarity",
+    "start_line": 147,
+    "end_line": 161,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "test_search_with_graph",
+    "start_line": 282,
+    "end_line": 292,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "new",
+      "search_with_graph"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "from_extension",
+    "start_line": 13,
+    "end_line": 19,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_validate_changes",
+    "start_line": 353,
+    "end_line": 369,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "validate_changes",
+      "validate_changes"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_preview_changes",
+    "start_line": 372,
+    "end_line": 388,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "from_directory",
+      "preview_changes",
+      "preview_changes"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "len",
+    "start_line": 105,
+    "end_line": 107,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\config.rs",
+    "function_name": "default",
+    "start_line": 14,
+    "end_line": 22,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\cleaner.rs",
+    "function_name": "new",
+    "start_line": 16,
+    "end_line": 22,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "get_directory_arg",
+    "start_line": 334,
+    "end_line": 337,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "open",
+    "start_line": 23,
+    "end_line": 43,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "init_schema"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "test_gemini_client",
+    "start_line": 228,
+    "end_line": 234,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "generate"
+    ]
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "is_valid",
+    "start_line": 111,
+    "end_line": 114,
+    "code_snippet": "Function",
+    "dependencies": [
+      "cache_path"
+    ]
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "get_annotation",
+    "start_line": 130,
+    "end_line": 159,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\analyzer.rs",
+    "function_name": "find_related_messages",
+    "start_line": 60,
+    "end_line": 110,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "is_empty",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "get_related_nodes",
+    "start_line": 83,
+    "end_line": 96,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "upsert_file",
+    "start_line": 104,
+    "end_line": 176,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "extract_function_name",
+    "start_line": 304,
+    "end_line": 319,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "dimension",
+    "start_line": 187,
+    "end_line": 189,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\analyzer.rs",
+    "function_name": "analyze_file",
+    "start_line": 17,
+    "end_line": 57,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "apply_single_change",
+    "start_line": 456,
+    "end_line": 488,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_calls",
+    "start_line": 178,
+    "end_line": 185,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "traverse_calls"
+    ]
+  },
+  {
+    "file_path": "src\\graph.rs",
+    "function_name": "add_edge",
+    "start_line": 73,
+    "end_line": 75,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "handle_initialize",
+    "start_line": 85,
+    "end_line": 102,
+    "code_snippet": "Function",
+    "dependencies": [
+      "success"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "get_recent_messages",
+    "start_line": 121,
+    "end_line": 123,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "build_topic_prompt",
+    "start_line": 142,
+    "end_line": 178,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "ensure_graph",
+    "start_line": 97,
+    "end_line": 103,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "scan_directory"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "test_get_dependencies_depth2",
+    "start_line": 357,
+    "end_line": 366,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "from_graph",
+      "get_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "is_exported",
+    "start_line": 140,
+    "end_line": 176,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "with_search_index",
+    "start_line": 64,
+    "end_line": 67,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "add_node",
+    "start_line": 61,
+    "end_line": 63,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\search\\query.rs",
+    "function_name": "with_min_score",
+    "start_line": 34,
+    "end_line": 37,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph_exporter.rs",
+    "function_name": "from_conversation_graph",
+    "start_line": 49,
+    "end_line": 105,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_imports",
+    "start_line": 445,
+    "end_line": 450,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "traverse_imports"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\analyzer.rs",
+    "function_name": "parse_llm_response",
+    "start_line": 102,
+    "end_line": 144,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_confidence",
+      "extract_reason"
+    ]
+  },
+  {
+    "file_path": "src\\graph.rs",
+    "function_name": "find_nodes_by_name",
+    "start_line": 151,
+    "end_line": 158,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "filter_dead_code_handler",
+    "start_line": 164,
+    "end_line": 185,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "filter_dead_code",
+      "filter_dead_code",
+      "len",
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph_exporter.rs",
+    "function_name": "load",
+    "start_line": 115,
+    "end_line": 119,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\chat_server.rs",
+    "function_name": "index_handler",
+    "start_line": 55,
+    "end_line": 58,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "save",
+    "start_line": 52,
+    "end_line": 59,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\graph.rs",
+    "function_name": "stats",
+    "start_line": 126,
+    "end_line": 143,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "len",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "annotate_with_backup",
+    "start_line": 40,
+    "end_line": 87,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "create_backup_dir",
+      "should_annotate",
+      "backup_file",
+      "add_change",
+      "add_annotation",
+      "save"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "default",
+    "start_line": 112,
+    "end_line": 114,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "test_get_dependencies_nonexistent",
+    "start_line": 383,
+    "end_line": 390,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "from_graph",
+      "get_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "is_empty",
+    "start_line": 111,
+    "end_line": 113,
+    "code_snippet": "Function",
+    "dependencies": [
+      "is_empty"
+    ]
+  },
+  {
+    "file_path": "src\\database_legacy\\database.rs",
+    "function_name": "get_file_hash",
+    "start_line": 179,
+    "end_line": 191,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\embedding_cache.rs",
+    "function_name": "build_from_graph",
+    "start_line": 40,
+    "end_line": 80,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "embed"
+    ]
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "filter_dead_code",
+    "start_line": 102,
+    "end_line": 112,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "build_filtered_graph"
+    ]
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "add_annotation",
+    "start_line": 109,
+    "end_line": 128,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_annotation"
+    ]
+  },
+  {
+    "file_path": "src\\embedding.rs",
+    "function_name": "new",
+    "start_line": 37,
+    "end_line": 80,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "load"
+    ]
+  },
+  {
+    "file_path": "src\\conversation\\graph_exporter.rs",
+    "function_name": "test_graph_data_export",
+    "start_line": 128,
+    "end_line": 163,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "add_node",
+      "add_node",
+      "add_edge",
+      "from_conversation_graph"
+    ]
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "build_filtered_graph",
+    "start_line": 282,
+    "end_line": 313,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "len",
+      "add_node",
+      "add_edge"
+    ]
+  },
+  {
+    "file_path": "src\\annotator.rs",
+    "function_name": "annotate",
+    "start_line": 36,
+    "end_line": 38,
+    "code_snippet": "Function",
+    "dependencies": [
+      "annotate_with_backup"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_stats",
+    "start_line": 242,
+    "end_line": 264,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_arg",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "detect_dead_code"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_search_with_graph",
+    "start_line": 415,
+    "end_line": 490,
+    "code_snippet": "Function",
+    "dependencies": [
+      "get_directory_from_value",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "new",
+      "get_or_create",
+      "search_semantic",
+      "search_with_graph",
+      "search_with_graph",
+      "search_with_graph"
+    ]
+  },
+  {
+    "file_path": "src\\scanner.rs",
+    "function_name": "find_node_at_line",
+    "start_line": 141,
+    "end_line": 149,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\filter.rs",
+    "function_name": "matches_keywords",
+    "start_line": 248,
+    "end_line": 261,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\prompt_history.rs",
+    "function_name": "save",
+    "start_line": 50,
+    "end_line": 54,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\conversation\\topic.rs",
+    "function_name": "extract_keywords",
+    "start_line": 198,
+    "end_line": 284,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "is_empty",
+      "is_empty",
+      "is_empty",
+      "is_empty",
+      "len"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\server.rs",
+    "function_name": "tool_search",
+    "start_line": 224,
+    "end_line": 239,
+    "code_snippet": "Function",
+    "dependencies": [
+      "tool_search_with_graph"
+    ]
+  },
+  {
+    "file_path": "src\\search\\graph_search.rs",
+    "function_name": "search_semantic",
+    "start_line": 107,
+    "end_line": 222,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "search_with_graph",
+      "embed",
+      "search_with_graph",
+      "cosine_similarity",
+      "is_empty",
+      "new",
+      "traverse_from",
+      "get_node",
+      "get_node",
+      "cosine_similarity",
+      "new",
+      "get_node"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\context.rs",
+    "function_name": "new",
+    "start_line": 7,
+    "end_line": 9,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\exporter.rs",
+    "function_name": "escape_dot",
+    "start_line": 193,
+    "end_line": 197,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\cleaner.rs",
+    "function_name": "delete_code",
+    "start_line": 107,
+    "end_line": 161,
+    "code_snippet": "Function",
+    "dependencies": [
+      "len",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "test_scanner_graph_edges",
+    "start_line": 393,
+    "end_line": 454,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "scan_directory",
+      "scan_directory",
+      "from_graph",
+      "get_dependencies",
+      "get_dependencies"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "test_get_dependents",
+    "start_line": 369,
+    "end_line": 380,
+    "code_snippet": "Function",
+    "dependencies": [
+      "create_test_graph",
+      "from_graph",
+      "get_dependents"
+    ]
+  },
+  {
+    "file_path": "src\\parser.rs",
+    "function_name": "extract_functions",
+    "start_line": 603,
+    "end_line": 605,
+    "code_snippet": "Function",
+    "dependencies": [
+      "extract_functions"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "backup_file",
+    "start_line": 99,
+    "end_line": 111,
+    "code_snippet": "Function",
+    "dependencies": []
+  },
+  {
+    "file_path": "src\\main.rs",
+    "function_name": "handle_chat_command",
+    "start_line": 1468,
+    "end_line": 1563,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "scan_directory",
+      "detect_dead_code",
+      "is_empty",
+      "len",
+      "new",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "annotate",
+      "new",
+      "scan_directory",
+      "detect_dead_code",
+      "new",
+      "clean",
+      "new",
+      "scan_directory",
+      "detect_dead_code"
+    ]
+  },
+  {
+    "file_path": "src\\search\\index.rs",
+    "function_name": "add_batch",
+    "start_line": 44,
+    "end_line": 49,
+    "code_snippet": "Function",
+    "dependencies": [
+      "add"
+    ]
+  },
+  {
+    "file_path": "src\\backup.rs",
+    "function_name": "restore",
+    "start_line": 149,
+    "end_line": 170,
+    "code_snippet": "Function",
+    "dependencies": [
+      "load",
+      "new",
+      "restore_change"
+    ]
+  },
+  {
+    "file_path": "src\\cleaner.rs",
+    "function_name": "clean_with_backup",
+    "start_line": 28,
+    "end_line": 85,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "create_backup_dir",
+      "confirm_delete",
+      "backup_file",
+      "add_change",
+      "delete_code",
+      "save"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\context.rs",
+    "function_name": "collect_dependency_info",
+    "start_line": 222,
+    "end_line": 266,
+    "code_snippet": "Function",
+    "dependencies": [
+      "collect_dependency_info"
+    ]
+  },
+  {
+    "file_path": "src\\web_server.rs",
+    "function_name": "start_server",
+    "start_line": 25,
+    "end_line": 53,
+    "code_snippet": "Function",
+    "dependencies": [
+      "new",
+      "new",
+      "new"
+    ]
+  },
+  {
+    "file_path": "src\\llm\\gemini.rs",
+    "function_name": "generate",
+    "start_line": 101,
+    "end_line": 113,
+    "code_snippet": "Function",
+    "dependencies": [
+      "generate_with_contents"
+    ]
+  },
+  {
+    "file_path": "src\\mcp\\changes.rs",
+    "function_name": "extract_import_path",
+    "start_line": 232,
+    "end_line": 245,
+    "code_snippet": "Function",
+    "dependencies": []
   }
 ]

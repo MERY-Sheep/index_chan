@@ -8,23 +8,26 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
   
-  LLMエージェント向けコード解析・変更ツール（Phase 6完了 - MVP達成！）
+  LLMエージェント向けコード解析・変更ツール（Phase 7.2完了 - Concept Transformer統合！）
 </div>
 
 ## 概要
 
-**🎉 MVP達成！（Phase 6完了 - v0.3.0）**
+**🎉 Phase 7.2 完了！（Concept Transformer 統合 - v0.4.0）**
 
-index-chanは、LLMエージェント（Kiro、Cursor等）向けに設計されたコード解析・変更ツールです。9個のMCP（Model Context Protocol）ツールを提供し、LLMが安全にコードを理解・修正できるようにします。
+index-chan は、LLM エージェント（Kiro、Cursor 等）向けに設計されたコード解析・変更ツールです。9 個の MCP（Model Context Protocol）ツールを提供し、LLM が安全にコードを理解・修正できるようにします。
 
 **主な機能:**
+
 - **デッドコード検出**: 未使用コードを自動検出
-- **コンテキスト生成**: 関数と依存関係を自動収集
+- **コンテキスト生成**: 関数と依存関係を自動収集（S/N比スコア付き）
+- **セマンティック検索**: Concept Transformer 統合によるグラフ探索
 - **一括変更**: 変更の検証・プレビュー・安全な適用
-- **Import検証**: 依存グラフを使用してLLMのハルシネーションを防止
+- **Import 検証**: 依存グラフを使用して LLM のハルシネーションを防止
 - **自動バックアップ**: タイムスタンプ付きで安全性を確保
 
 **アーキテクチャ:**
+
 ```
 LLMエージェント（Kiro/Cursor）
     ↓ MCPプロトコル
@@ -35,36 +38,77 @@ TypeScriptプロジェクト
 
 ## 機能
 
-### MCPツール（Phase 6 ✅ 完了）
+### MCP ツール（Phase 6 ✅ 完了）
 
-**LLMエージェント向けの9個のMCPツール:**
+**LLM エージェント向けの 9 個の MCP ツール:**
 
 **基本機能:**
+
 1. **scan**: デッドコード検出
 2. **search**: コード検索（要インデックス作成）
 3. **stats**: プロジェクト統計
 
 **コンテキスト生成:**
-4. **gather_context**: 関数と依存関係を含むコンテキスト生成
-5. **get_dependencies**: 指定関数の依存先を取得
-6. **get_dependents**: 指定関数の依存元を取得
+4. **gather_context**: 関数と依存関係を含むコンテキスト生成（S/N比スコア付き）
+5. **get_dependencies**: 指定関数の依存先を取得（修飾名検索対応）
+6. **get_dependents**: 指定関数の依存元を取得（重複除去済み）
 
-**一括変更:**
-7. **validate_changes**: 変更の妥当性を検証
-8. **preview_changes**: 変更内容を差分表示
-9. **apply_changes**: 検証済み変更を安全に適用
+**一括変更:** 7. **validate_changes**: 変更の妥当性を検証 8. **preview_changes**: 変更内容を差分表示 9. **apply_changes**: 検証済み変更を安全に適用
+
+**グラフ検索（Phase 7）:**
+10. **search_with_graph**: グラフ探索 + セマンティック検索（デフォルト有効）
+
+### Phase 7.2 新機能 🆕
+
+**S/N比スコア（Concept Transformer 統合）:**
+
+`gather_context` が返すコンテキストに品質メトリクスが付与されます：
+
+```
+// ===== QUALITY METRICS =====
+// Estimated tokens: 1200
+// S/N ratio: 2.35
+// Quality: high
+// =============================
+```
+
+- **S/N比**: 意味のある識別子（3文字以上）と短い変数名（1-2文字）の比率
+- **Quality**: high (S/N > 2.0) / medium (1.0-2.0) / low (< 1.0)
+- **Recommendation**: 品質が低い場合の改善提案
+
+**修飾名検索:**
+
+`get_dependencies` / `get_dependents` で絞り込み検索が可能：
+
+```
+# ファイル名で絞り込み
+get_dependencies("graph_search.rs::new")
+
+# 型名で絞り込み（シグネチャ内のimpl Typeにマッチ）
+get_dependencies("GraphSearcher::new")
+```
+
+**skeleton モードのシグネチャ表示:**
+
+```
+// Before
+search_semantic Function // ...
+
+// After
+pub fn search_semantic(&self, query: &str, ...) -> Vec<GraphSearchResult>
+```
 
 ### コア機能
 
-- **TypeScript AST解析**: tree-sitterによる高速解析
+- **TypeScript AST 解析**: tree-sitter による高速解析
 - **依存グラフ**: 構築と解析
 - **デッドコード検出**: 未使用関数・クラスの検出
 - **安全性レベル評価**: 確実に安全/おそらく安全/要確認
 - **対話的・自動削除**: 柔軟な削除モード
 - **アノテーション機能**: 警告抑制コメント自動追加
-- **Import検証**: 依存グラフを使用（LLMのハルシネーション防止）
+- **Import 検証**: 依存グラフを使用（LLM のハルシネーション防止）
 - **自動バックアップ**: タイムスタンプ付き
-- **Undo機能**: マニフェスト方式で安全な復元（Phase 7.1 ✅）
+- **Undo 機能**: マニフェスト方式で安全な復元（Phase 7.1 ✅）
 - **.indexchanignore**: スキャン対象の柔軟な除外（Phase 7.1 ✅）
 
 ## インストール
@@ -75,16 +119,18 @@ cargo install --path .
 
 ## クイックスタート
 
-### LLMエージェント（Kiro/Cursor）向け
+### LLM エージェント（Kiro/Cursor）向け
 
-**1. index-chanをビルド:**
+**1. index-chan をビルド:**
+
 ```bash
 cargo build --release
 ```
 
-**2. KiroでMCPを設定:**
+**2. Kiro で MCP を設定:**
 
 `~/.kiro/settings/mcp.json`を編集:
+
 ```json
 {
   "mcpServers": {
@@ -105,7 +151,8 @@ cargo build --release
 }
 ```
 
-**3. LLMから使用:**
+**3. LLM から使用:**
+
 ```
 ユーザー: 「認証機能にレート制限を追加して」
 
@@ -130,7 +177,7 @@ LLM: index-chan.apply_changes({...})
      → バックアップ付きで適用完了
 ```
 
-## CLI使用方法
+## CLI 使用方法
 
 ### スキャン（検出のみ）
 
@@ -192,7 +239,8 @@ index-chan export <directory> -o graph.dot -f dot
 index-chan export <directory> -o graph.json -f json
 ```
 
-**Graphvizでの可視化:**
+**Graphviz での可視化:**
+
 ```bash
 # SVG出力
 dot -Tsvg graph.dot -o graph.svg
@@ -201,7 +249,7 @@ dot -Tsvg graph.dot -o graph.svg
 neato -Tpng graph.dot -o graph.png
 ```
 
-### 3D Web可視化（Phase 3.2 ✅）
+### 3D Web 可視化（Phase 3.2 ✅）
 
 ```bash
 # Web機能を有効にしてビルド
@@ -215,17 +263,19 @@ cargo run --features web --release -- visualize <directory> --port 8080 --open
 ```
 
 **機能:**
-- Three.js + force-graph-3dによるインタラクティブ3Dグラフ
+
+- Three.js + force-graph-3d によるインタラクティブ 3D グラフ
 - リアルタイム統計（ノード数、エッジ数、未使用数）
 - ノードクリックで詳細表示
 - カメラ操作（回転、ズーム、パン）
-- ダークテーマUI
+- ダークテーマ UI
 
 **ブラウザで開く:** http://localhost:8080
 
 ### データベース層（Phase 4 ✅）
 
 **Phase 4.0: 基礎機能**
+
 ```bash
 # DB機能を有効にしてビルド
 cargo build --features db --release
@@ -240,7 +290,8 @@ cargo run --features db --release -- stats <directory>
 cargo run --features db --release -- watch <directory>
 ```
 
-**Phase 4.1: 既存コマンドのDB統合**
+**Phase 4.1: 既存コマンドの DB 統合**
+
 ```bash
 # DBから高速スキャン
 cargo run --features db --release -- scan <directory> --use-db
@@ -253,14 +304,16 @@ cargo run --features db,web --release -- visualize <directory> --use-db
 ```
 
 **機能:**
-- SQLiteによる永続化
+
+- SQLite による永続化
 - ファイルハッシュベースの変更検知
 - リアルタイムファイル監視
 - 自動データベース更新
 - プロジェクト統計
-- 既存コマンドのDB対応（再スキャン不要）
+- 既存コマンドの DB 対応（再スキャン不要）
 
 **理想的なワークフロー:**
+
 ```bash
 # 1. プロジェクト初期化（一度だけ）
 $ cargo run --features db --release -- init test_project
@@ -309,21 +362,23 @@ $ cargo run --features db --release -- export test_project -o graph.json -f json
 ```
 
 **特徴:**
-- 一度initすれば、あとは自動で追跡
-- watchが変更を検知して自動更新
-- すべてのコマンドが--use-dbで高速化
+
+- 一度 init すれば、あとは自動で追跡
+- watch が変更を検知して自動更新
+- すべてのコマンドが--use-db で高速化
 - 再スキャン不要
 
-## LLMモード（Phase 1.5）
+## LLM モード（Phase 1.5）
 
 ### 概要
 
-LLMモードでは、Qwen2.5-Coder-1.5Bを使用して高精度な分析を行います。
+LLM モードでは、Qwen2.5-Coder-1.5B を使用して高精度な分析を行います。
 
 **特徴**
+
 - 完全ローカル実行（コードが外部に送信されない）
 - 「将来使う予定」「実験的機能」「WIP」の自動検出
-- Git履歴を考慮した判断
+- Git 履歴を考慮した判断
 - 確信度スコア付き
 
 ### 推論テスト
@@ -380,7 +435,7 @@ cargo run -- scan test_project --llm
 └─ experimentalAI: 実験的機能、issue #123で議論中 (確信度: 88%)
 ```
 
-### LLMアノテーション
+### LLM アノテーション
 
 ```bash
 # LLMで分析して自動アノテーション
@@ -393,7 +448,7 @@ function experimentalFeature() {
 }
 ```
 
-## Phase 2の新機能
+## Phase 2 の新機能
 
 ### コード検索
 
@@ -468,7 +523,7 @@ index-chan related chat_history.json "エラー" -k 3 --context
   削減率: 39.5%
 ```
 
-### 会話グラフUI & プロンプト可視化（Phase 2.5 🚧）
+### 会話グラフ UI & プロンプト可視化（Phase 2.5 🚧）
 
 ```bash
 # Web機能を有効にしてビルド
@@ -482,7 +537,8 @@ cargo run --features web --release -- visualize-chat test_project/chat_history.j
 ```
 
 **機能:**
-- Cytoscape.jsによるインタラクティブな会話グラフ
+
+- Cytoscape.js によるインタラクティブな会話グラフ
 - 削減されたメッセージの視覚化（透明度、色分け）
 - プロンプト履歴の表示（シンタックスハイライト）
 - グラフとプロンプトの連携（クリックで相互ジャンプ）
@@ -492,6 +548,7 @@ cargo run --features web --release -- visualize-chat test_project/chat_history.j
 **ブラウザで開く:** http://localhost:8081
 
 **プロンプト履歴の表示:**
+
 ```bash
 # プロンプト統計のみ表示
 index-chan show-prompts test_project/prompt_history.json --stats
@@ -509,7 +566,7 @@ index-chan show-prompts test_project/prompt_history.json
 index-chan show-prompts test_project/prompt_history.json --node-id "0"
 ```
 
-### Embeddingモデルのテスト
+### Embedding モデルのテスト
 
 ```bash
 # 基本テスト
@@ -539,112 +596,160 @@ index-chan test-embedding --compare
 
 ### システム要件
 
-**LLMモード使用時**
-- メモリ: 3GB以上推奨
-- ディスク: 3GB以上（モデルキャッシュ）
-- 初回ダウンロード: 約3GB
-- 推論速度: 約2秒/関数（CPU）
+**LLM モード使用時**
+
+- メモリ: 3GB 以上推奨
+- ディスク: 3GB 以上（モデルキャッシュ）
+- 初回ダウンロード: 約 3GB
+- 推論速度: 約 2 秒/関数（CPU）
 
 **通常モード**
-- メモリ: 数十MB
-- ディスク: 数MB
+
+- メモリ: 数十 MB
+- ディスク: 数 MB
 
 ## 開発状況とロードマップ
 
-### 🎉 MVP達成！（Phase 6完了）
+### 🎉 MVP 達成！（Phase 6 完了）
 
-**Phase 1: デッドコード検出CLI** ✅ 完了
-- TypeScript解析と依存グラフ構築
+**Phase 1: デッドコード検出 CLI** ✅ 完了
+
+- TypeScript 解析と依存グラフ構築
 - 未使用コードの検出と削除
 
-**Phase 1.5: LLM統合** ✅ 完了
-- ローカルLLMによる高精度分析
+**Phase 1.5: LLM 統合** ✅ 完了
+
+- ローカル LLM による高精度分析
 - 「将来使う予定」のコード識別
 
 **Phase 2: 検索 + 会話グラフ** ✅ 完了
+
 - ベクトル検索によるコード検索
 - 会話グラフによるチャット履歴分析
 - トークン削減（39.5〜60%達成）
 
 **Phase 3: グラフ可視化** ✅ 完了
-- GraphML/DOT/JSONエクスポート
-- 3D Web可視化
+
+- GraphML/DOT/JSON エクスポート
+- 3D Web 可視化
 
 **Phase 4: データベース層** ✅ 完了
-- SQLite永続化
+
+- SQLite 永続化
 - ファイル監視と自動更新
 
-**Phase 6: MCP統合** ✅ 完了（MVP！）
-- LLMエージェント向け9個のMCPツール
+**Phase 6: MCP 統合** ✅ 完了（MVP！）
+
+- LLM エージェント向け 9 個の MCP ツール
 - 依存関係を含むコンテキスト生成
 - 検証付き一括変更
-- Import検証（ハルシネーション防止）
+- Import 検証（ハルシネーション防止）
 - 自動バックアップ
 
-**Phase 5: Tauriデスクトップアプリ** ❄️ 凍結
-- CLI/MCPに集中するため延期
+**Phase 7: GraphRAG 統合** ✅ 完了
 
-詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)、ロードマップは[Doc/MVP/MVP_ロードマップ.md](Doc/MVP/MVP_ロードマップ.md)を参照してください。
+- Rust パーサー強化（メソッドチェーン、マクロ、scoped_identifier 検出）
+- セマンティック検索（embedding 類似度 + グラフ探索）
+- スコア計算改善（探索先ノードも類似度再計算）
+- search ツールを search_with_graph に統合
 
-### 完了したPhase ✅
+**Phase 7.2: Concept Transformer 統合** ✅ 完了 🆕
+
+- **S/N比スコア**: gather_context の品質メトリクス（Concept Transformer 理論に基づく）
+- **シグネチャ表示**: skeleton モードで関数シグネチャを出力
+- **修飾名検索**: `file.rs::func` や `Type::func` 形式での絞り込み検索
+- **重複除去**: get_dependencies/get_dependents の結果から重複を排除
+- **semantic 検索デフォルト化**: embedding 検索がデフォルトで有効
+
+**Phase 5: Tauri デスクトップアプリ** 🗑️ 削除済み
+
+- MCP/CLI に集中するためコード削除
+
+詳細なビジョンは[docs/VISION.ja.md](docs/VISION.ja.md)、ロードマップは[Doc/MVP/MVP\_ロードマップ.md](Doc/MVP/MVP_ロードマップ.md)を参照してください。
+
+### 完了した Phase ✅
 
 **Phase 1: デッドコード検出**
-- [x] TypeScript解析（tree-sitter）
+
+- [x] TypeScript 解析（tree-sitter）
 - [x] 依存グラフ構築
 - [x] デッドコード検出
 - [x] 削除機能（対話的/自動）
 - [x] アノテーション機能
 
-**Phase 1.5: LLM統合**
-- [x] LLM統合（Qwen2.5-Coder-1.5B）
+**Phase 1.5: LLM 統合**
+
+- [x] LLM 統合（Qwen2.5-Coder-1.5B）
 - [x] ローカル推論
-- [x] コンテキスト収集（Git履歴）
+- [x] コンテキスト収集（Git 履歴）
 - [x] 高精度分析
 
 **Phase 2: 検索 + 会話グラフ**
+
 - [x] ベクトル検索基盤
 - [x] 会話グラフ基盤
-- [x] CLI統合
-- [x] Embeddingモデル統合（CandleによるBERT）
+- [x] CLI 統合
+- [x] Embedding モデル統合（Candle による BERT）
 - [x] トピック検出
 - [x] 関連メッセージ検索
 - [x] トークン削減（39.5〜60%達成）
 
 **Phase 3: グラフ可視化**
-- [x] GraphML/DOT/JSONエクスポート
-- [x] 3D Web可視化（Three.js + force-graph-3d）
+
+- [x] GraphML/DOT/JSON エクスポート
+- [x] 3D Web 可視化（Three.js + force-graph-3d）
 
 **Phase 4: データベース層**
-- [x] SQLite永続化
+
+- [x] SQLite 永続化
 - [x] ファイルハッシュベースの変更検知
 - [x] ファイル監視と自動更新
-- [x] 既存コマンドのDB統合
+- [x] 既存コマンドの DB 統合
 
-**Phase 6: MCP統合（MVP！）**
-- [x] MCPサーバー実装（JSON-RPC 2.0、stdio）
-- [x] 9個のMCPツール（scan、search、stats、gather_context等）
+**Phase 6: MCP 統合（MVP！）**
+
+- [x] MCP サーバー実装（JSON-RPC 2.0、stdio）
+- [x] 9 個の MCP ツール（scan、search、stats、gather_context 等）
 - [x] 依存関係を含むコンテキスト生成
 - [x] 一括変更（validate、preview、apply）
-- [x] 依存グラフを使用したImport検証
+- [x] 依存グラフを使用した Import 検証
 - [x] タイムスタンプ付き自動バックアップ
 - [x] 統合テスト
+
+**Phase 7: GraphRAG 統合**
+
+- [x] Rust パーサー強化（メソッドチェーン、マクロ検出）
+- [x] セマンティック検索（embedding + グラフ探索）
+- [x] スコア計算改善
+- [x] search_with_graph ツール
+
+**Phase 7.2: Concept Transformer 統合** 🆕
+
+- [x] S/N比スコア（コンテキスト品質メトリクス）
+- [x] シグネチャ表示（skeleton モード改善）
+- [x] 修飾名検索（file.rs::func, Type::func）
+- [x] 重複除去（get_dependencies/get_dependents）
+- [x] semantic 検索デフォルト有効化
 
 ### 次のステップ
 
 **短期:**
+
 - 実運用でのフィードバック収集
 - エラーハンドリングの改善
 - パフォーマンス最適化
 
 **中期:**
-- TypeScript型チェック統合
-- ESLint統合
+
+- TypeScript 型チェック統合
+- ESLint 統合
 - テスト自動実行
 
 **長期:**
+
 - 多言語対応（JavaScript、Python、Rust）
-- 変更履歴のWeb UI
-- 他のLLMエージェント対応（Claude、ChatGPT）
+- 変更履歴の Web UI
+- 他の LLM エージェント対応（Claude、ChatGPT）
 
 ## テスト
 
@@ -673,13 +778,14 @@ MIT License
 **このプロジェクトは個人の実験的プロジェクトです。**
 
 - 作者はプロフェッショナルなプログラマではありません
-- Phase 1.5（LLM統合）が完了したばかりで、まだ不安定です
+- Phase 1.5（LLM 統合）が完了したばかりで、まだ不安定です
 - 本番環境での使用は推奨しません
 - バグや問題が含まれている可能性が高いです
 - サポートは限定的です（質問に答えられない場合があります）
 - 使用は自己責任でお願いします
 
 **貢献について:**
+
 - バグ報告は歓迎しますが、即座の対応は保証できません
 - このプロジェクトは学習・実験目的で作成されています
 
@@ -690,5 +796,4 @@ MIT License
 
 ## 貢献
 
-現在は個人開発中ですが、Issue・PRは歓迎します。
-
+現在は個人開発中ですが、Issue・PR は歓迎します。

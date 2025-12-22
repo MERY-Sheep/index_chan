@@ -341,8 +341,9 @@ mod tests {
             line_range: (1, 10),
             is_exported: true,
             is_used: true,
+            signature: "fn llm_analyzer()".to_string(),
         };
-        
+
         let node2 = CodeNode {
             id: 1,
             name: "scan_file".to_string(),
@@ -351,6 +352,7 @@ mod tests {
             line_range: (1, 10),
             is_exported: true,
             is_used: true,
+            signature: "fn scan_file()".to_string(),
         };
 
         graph.add_node(node1);
@@ -375,8 +377,9 @@ mod tests {
             line_range: (1, 10),
             is_exported: true,
             is_used: true,
+            signature: "fn used_function()".to_string(),
         };
-        
+
         let node2 = CodeNode {
             id: 1,
             name: "unused_function".to_string(),
@@ -385,6 +388,7 @@ mod tests {
             line_range: (1, 10),
             is_exported: false,
             is_used: false,
+            signature: "fn unused_function()".to_string(),
         };
 
         graph.add_node(node1);
